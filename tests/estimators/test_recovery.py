@@ -10,9 +10,7 @@ a few seconds each.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
-from active_inference.core.diagnostics import calibration_curve
 from active_inference.core.generative_model import LinearGaussianModel
 from active_inference.core.generative_process import (
     LinearGaussianMVProcess,
@@ -92,7 +90,6 @@ class TestHiddenStateRecovery:
 
 class TestMAPShrinkage:
     def test_strong_prior_shrinks_toward_prior_mean(self) -> None:
-        rng = np.random.default_rng(SEED + 2)
         x_star = 2.0
         prior_mean = 4.0
         proc = _make_proc(sigma2_y=0.5, seed=SEED + 2)

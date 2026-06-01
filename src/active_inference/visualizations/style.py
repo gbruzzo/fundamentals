@@ -21,14 +21,20 @@ from typing import Mapping, Optional
 
 import matplotlib as mpl
 
-# Palette — keep in sync with `tab10` ordering used throughout chapter scripts.
+# Palette — the Okabe-Ito colourblind-safe palette (Okabe & Ito 2008), chosen so
+# every pair of roles stays distinguishable under deuteranopia, protanopia and
+# tritanopia (the red+green ``tab10`` defaults are the classic accessibility
+# failure). Hues are also separated in luminance so the figures survive greyscale
+# printing. Keys are stable; only the hex values changed.
 COLORS: Mapping[str, str] = {
-    "prior":     "#1f77b4",   # blue
-    "likelihood": "#d62728",  # red
-    "posterior": "#2ca02c",   # green
-    "data":      "#000000",   # black
-    "truth":     "#ff0000",   # bright red
-    "neutral":   "#888888",
+    "prior":      "#0072B2",  # blue
+    "likelihood": "#D55E00",  # vermillion (distinct from green for red-green CVD)
+    "posterior":  "#009E73",  # bluish green
+    "data":       "#000000",  # black
+    "truth":      "#CC79A7",  # reddish purple
+    "neutral":    "#6E6E6E",  # mid grey (darker than before for contrast)
+    "state":      "#E69F00",  # orange  — state prediction error ε_x (was inline)
+    "sensory":    "#56B4E9",  # sky blue — sensory prediction error ε_y (was inline)
 }
 
 
@@ -59,19 +65,27 @@ def stat_box_bbox(
 
 
 DEFAULT_RC: Mapping[str, object] = {
-    "font.size":         12,
-    "axes.titlesize":    13,
-    "axes.labelsize":    12,
-    "xtick.labelsize":   11,
-    "ytick.labelsize":   11,
-    "legend.fontsize":   10,
-    "figure.titlesize":  14,
+    "font.size":         15,
+    "axes.titlesize":    18,
+    "axes.titleweight":  "bold",
+    "axes.labelsize":    16,
+    "axes.labelweight":  "bold",
+    "xtick.labelsize":   14,
+    "ytick.labelsize":   14,
+    "legend.fontsize":   13,
+    "legend.framealpha": 0.95,
+    "legend.edgecolor":  "0.55",
+    "legend.borderpad":  0.6,
+    "figure.titlesize":  20,
+    "figure.titleweight": "bold",
     "axes.grid":         True,
-    "grid.alpha":        0.3,
+    "grid.alpha":        0.35,
+    "axes.linewidth":    1.2,
     "axes.spines.top":   False,
     "axes.spines.right": False,
-    "lines.linewidth":   2.0,
-    "savefig.dpi":       150,
+    "lines.linewidth":   2.6,
+    "lines.markersize":  8.0,
+    "savefig.dpi":       170,
     "savefig.bbox":      "tight",
     "figure.constrained_layout.use": True,
 }
@@ -115,26 +129,65 @@ def annotate_stat_box(
     text: str,
     *,
     loc: str = "upper left",
-    fontsize: int = 10,
+    fontsize: int = 12,
+    monospace: bool = True,
     **bbox_overrides,
 ):
     """Place a stat-box at a named corner of the axis.
 
     ``loc`` accepts the same names as `Axes.legend(loc=...)` (only the
     four corners and "center" — anything else falls back to top-left).
+    ``monospace`` renders the readout in a fixed-width font so columns of
+    numbers line up — the default for statistics panels.
     """
     corners = {
-        "upper left":  (0.02, 0.97, "left",  "top"),
-        "upper right": (0.98, 0.97, "right", "top"),
-        "lower left":  (0.02, 0.03, "left",  "bottom"),
-        "lower right": (0.98, 0.03, "right", "bottom"),
+        "upper left":  (0.025, 0.97, "left",  "top"),
+        "upper right": (0.975, 0.97, "right", "top"),
+        "lower left":  (0.025, 0.03, "left",  "bottom"),
+        "lower right": (0.975, 0.03, "right", "bottom"),
         "center":      (0.50, 0.50, "center", "center"),
     }
     x, y, ha, va = corners.get(loc, corners["upper left"])
     bbox = stat_box_bbox(**bbox_overrides)
+    kw = dict(family="monospace") if monospace else {}
     return ax.text(
         x, y, text,
         transform=ax.transAxes,
         fontsize=fontsize, ha=ha, va=va,
-        bbox=bbox,
+        bbox=bbox, **kw,
     )
+
+
+def annotate_point(
+    ax,
+    x: float,
+    y: float,
+    text: str,
+    *,
+    color: str = "#000000",
+    dx: float = 0.0,
+    dy: float = 0.0,
+    marker: str = "o",
+    ms: float = 9.0,
+    fontsize: int = 12,
+    arrow: bool = True,
+):
+    """Mark a single ``(x, y)`` point and label it with an arrow callout.
+
+    Used to pin **analytical** landmarks on a figure — a fixed point, an
+    oracle value, a closed-form minimum — so the reader sees the exact
+    coordinate, not just the curve. ``dx``/``dy`` offset the text label (in
+    data coordinates) from the marker; set ``arrow=False`` for a bare label.
+    """
+    ax.plot([x], [y], marker=marker, color=color, ms=ms, zorder=6,
+            markeredgecolor="white", markeredgewidth=1.2)
+    ann_kw = dict(fontsize=fontsize, color=color, fontweight="bold",
+                  ha="left", va="center", zorder=7)
+    if arrow:
+        ax.annotate(
+            text, xy=(x, y), xytext=(x + dx, y + dy),
+            arrowprops=dict(arrowstyle="->", color=color, lw=1.4),
+            **ann_kw,
+        )
+    else:
+        ax.text(x + dx, y + dy, text, **ann_kw)

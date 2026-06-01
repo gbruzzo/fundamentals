@@ -9,39 +9,60 @@ be edited by hand.
 ```
 output/
 ├── README.md          ← this file
-├── data/              ← serialized numerical results (.npz, .json, .csv)
-│   └── .gitkeep       ← keeps the directory tracked in git
-└── figures/           ← rendered figures (.png, .pdf)
+├── data/              ← raw numerical results (NPZ arrays + JSON manifests)
+│   ├── chapter_01/    ← raw-data sidecars for Chapter 1 artifacts
+│   └── ... chapter_10/
+└── figures/           ← rendered figures (.png) + animations (.gif)
     ├── chapter_01/    ← figures from Chapter 1 orchestrators
-    ├── chapter_02/    ← figures from Chapter 2 orchestrators
-    └── .gitkeep       ← keeps the directory tracked in git
+    ├── chapter_02/    ← figures + GIFs from Chapter 2 orchestrators
+    ├── chapter_03/    ← figures + GIFs from Chapter 3 orchestrators
+    ├── chapter_04/    ← figures + GIF from Chapter 4 orchestrators
+    ├── chapter_05/    ← figures + GIFs from Chapter 5 orchestrators
+    ├── chapter_06/    ← generalized filtering + correlated-coordinate figures
+    ├── chapter_07/    ← active generalized filtering figures + GIF
+    ├── chapter_08/    ← learning / attention / hierarchy figures
+    ├── chapter_09/    ← discrete POMDP figures + GIFs
+    └── chapter_10/    ← POMDP learning / extension figures + GIFs
 ```
+
+Each `figures/chapter_<N>/` folder has its own README listing the exact files
+and the script that produces each one.
 
 ## .gitignore
 
-Generated `.png`, `.pdf`, and `.npz` files are gitignored:
+Generated media and serialized data files are gitignored recursively:
 
 ```
-output/figures/*.png
-output/figures/*.pdf
-output/data/*.npz
+output/figures/**/*.png
+output/figures/**/*.gif
+output/figures/**/*.pdf
+output/data/**/*.npz
+output/data/**/*.json
 ```
 
-Only `.gitkeep` sentinel files are tracked so the directory structure persists
-in the repository.
+README/AGENTS files and `.gitkeep` sentinels remain visible so the directory
+structure and regeneration contract stay documented. Some historical sample
+artifacts may be tracked intentionally; new generated media should remain
+reproducible from source.
 
 ## Regenerating Everything
 
 ```bash
-# Clean old artifacts first (optional)
+# Clean old generated media/data first (optional; docs are preserved)
 python scripts/run_all_figures.py --clean
 
-# Render all figures
+# Render all figures (chapters 1–10)
 python scripts/run_all_figures.py
+
+# Validate rendered PNG/GIF artifacts
+python scripts/validate_rendered_figures.py --root output/figures
+
+# Validate raw-data NPZ+JSON sidecars
+python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
 
 # Or by chapter
 python scripts/run_all_figures.py --chapters 1
-python scripts/run_all_figures.py --chapters 2
+python scripts/run_all_figures.py --chapters 4 5
 ```
 
 ## Path Helpers
@@ -57,36 +78,20 @@ default_data_dir()    # → Path("output/data")
 
 ## Contents
 
-### Figures
+Figures and raw data are organized one folder per chapter. The raw-data files
+are written by `save_chapter_data` directly or by shared visualization helpers:
 
-| Path | Produced by |
-|---|---|
-| `figures/chapter_01/01_box_scenario_generator.png` | `chapters/chapter_01/01_box_scenario.py` |
-| `figures/chapter_01/01_box_scenario_stream.png` | `chapters/chapter_01/01_box_scenario.py` |
-| `figures/chapter_01/02_three_perspectives.png` | `chapters/chapter_01/02_three_perspectives.py` |
-| `figures/chapter_01/03_bayes_evidence.png` | `chapters/chapter_01/03_bayes_intuition.py` |
-| `figures/chapter_01/03_bayes_overlay.png` | `chapters/chapter_01/03_bayes_intuition.py` |
-| `figures/chapter_01/03_bayes_three_panel.png` | `chapters/chapter_01/03_bayes_intuition.py` |
-| `figures/chapter_01/04_inverse_curve.png` | `chapters/chapter_01/04_inverse_problem.py` |
-| `figures/chapter_01/04_inverse_overlay.png` | `chapters/chapter_01/04_inverse_problem.py` |
-| `figures/chapter_01/04_inverse_posterior.png` | `chapters/chapter_01/04_inverse_problem.py` |
-| `figures/chapter_02/example_2_1_linear_deterministic.png` | `chapters/chapter_02/example_2_1_linear_deterministic.py` |
-| `figures/chapter_02/example_2_2_curve.png` | `chapters/chapter_02/example_2_2_linear_probabilistic.py` |
-| `figures/chapter_02/example_2_2_posterior.png` | `chapters/chapter_02/example_2_2_linear_probabilistic.py` |
-| `figures/chapter_02/example_2_3_precision.png` | `chapters/chapter_02/example_2_3_precision.py` |
-| `figures/chapter_02/example_2_4_curve.png` | `chapters/chapter_02/example_2_4_nonlinear_deterministic.py` |
-| `figures/chapter_02/example_2_4_posterior.png` | `chapters/chapter_02/example_2_4_nonlinear_deterministic.py` |
-| `figures/chapter_02/example_2_5_curve.png` | `chapters/chapter_02/example_2_5_nonlinear_probabilistic.py` |
-| `figures/chapter_02/example_2_5_posterior.png` | `chapters/chapter_02/example_2_5_nonlinear_probabilistic.py` |
-| `figures/chapter_02/example_2_6_imperfect_model.png` | `chapters/chapter_02/example_2_6_imperfect_model.py` |
-| `figures/chapter_02/example_2_7_convergence.png` | `chapters/chapter_02/example_2_7_multiple_samples.py` |
-| `figures/chapter_02/example_2_7_posterior.png` | `chapters/chapter_02/example_2_7_multiple_samples.py` |
-| `figures/chapter_02/example_2_7_ridge.png` | `chapters/chapter_02/example_2_7_multiple_samples.py` |
-| `figures/chapter_02/example_2_8_mle.png` | `chapters/chapter_02/example_2_8_mle_analytic.py` |
-| `figures/chapter_02/example_2_9_map.png` | `chapters/chapter_02/example_2_9_map_analytic.py` |
-| `figures/chapter_02/example_2_10_comparison.png` | `chapters/chapter_02/example_2_10_gradient_descent.py` |
-| `figures/chapter_02/example_2_10_mle_descent.png` | `chapters/chapter_02/example_2_10_gradient_descent.py` |
-| `figures/chapter_02/example_2_10_map_descent.png` | `chapters/chapter_02/example_2_10_gradient_descent.py` |
-| `figures/chapter_02/joint_gaussian.png` | `chapters/chapter_02/visualize_generative_model.py` |
-| `figures/chapter_02/joint_surface.png` | `chapters/chapter_02/visualize_generative_model.py` |
-| `figures/chapter_02/joint_uniform.png` | `chapters/chapter_02/visualize_generative_model.py` |
+- [`figures/chapter_01/`](figures/chapter_01/README.md)
+- [`figures/chapter_02/`](figures/chapter_02/README.md)
+- [`figures/chapter_03/`](figures/chapter_03/README.md)
+- [`figures/chapter_04/`](figures/chapter_04/README.md)
+- [`figures/chapter_05/`](figures/chapter_05/README.md)
+- [`figures/chapter_06/`](figures/chapter_06/README.md)
+- [`figures/chapter_07/`](figures/chapter_07/README.md)
+- [`figures/chapter_08/`](figures/chapter_08/README.md)
+- [`figures/chapter_09/`](figures/chapter_09/README.md)
+- [`figures/chapter_10/`](figures/chapter_10/README.md)
+
+Each data export has a compressed `NPZ` file for numeric arrays plus a `JSON`
+manifest containing script provenance, CLI args, seed when present, linked
+figure paths, array shape/dtype contracts, and summary statistics.

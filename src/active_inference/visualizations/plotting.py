@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 
 from ..core.inference import InferenceResult
+from ..utils import save_figure_data
 
 
 def save_or_show(
@@ -33,6 +34,7 @@ def save_or_show(
         out = Path(save_path)
         out.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(out, dpi=dpi, bbox_inches="tight")
+        save_figure_data(fig, out, metadata={"dpi": dpi})
     if show:
         plt.show()
     if save_path is not None and not show:
@@ -142,13 +144,24 @@ def plot_generating_function(
         # Residual statistics: project each sample to the curve via interp.
         f_at_samples = np.interp(np.asarray(samples_x), x_grid, f_x)
         residuals = np.asarray(samples_y) - f_at_samples
+        if residuals.size == 0:
+            residual_summary = "N = 0\nresidual statistics unavailable"
+        else:
+            residual_std = (
+                f"{float(residuals.std(ddof=1)):.3f}"
+                if residuals.size > 1
+                else "n/a (N < 2)"
+            )
+            residual_summary = (
+                f"N = {residuals.size}\n"
+                f"residual mean = {float(residuals.mean()):+.3f}\n"
+                f"residual std  = {residual_std}\n"
+                f"RMSE          = {float(np.sqrt((residuals ** 2).mean())):.3f}"
+            )
         from .style import stat_box_bbox
         ax.text(
             0.02, 0.97,
-            f"N = {residuals.size}\n"
-            f"residual mean = {residuals.mean():+.3f}\n"
-            f"residual std  = {residuals.std(ddof=1):.3f}\n"
-            f"RMSE          = {float(np.sqrt((residuals ** 2).mean())):.3f}",
+            residual_summary,
             transform=ax.transAxes, va="top", ha="left",
             fontsize=9, bbox=stat_box_bbox(),
         )

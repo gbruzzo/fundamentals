@@ -34,12 +34,14 @@ LOG = get_logger("ch2.joint")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     return p.parse_args()
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     x_grid = make_grid(0.0, 5.0, 200)
     y_grid = make_grid(-1.0, 14.0, 200)

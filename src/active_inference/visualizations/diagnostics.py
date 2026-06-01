@@ -9,7 +9,7 @@ an inference run, not just admire its shape.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -265,7 +265,7 @@ def plot_running_statistics(
     show: bool = False,
     figsize: tuple[float, float] = (8, 4),
 ) -> plt.Figure:
-    """Two-panel running posterior mean and standard deviation."""
+    """Plot running posterior mean and standard deviation with optional truth reference."""
     fig, axes = plt.subplots(1, 2, figsize=figsize, constrained_layout=True,
                              sharex=True)
     axes[0].plot(n_axis, running_mean, "-", color="#2ca02c", lw=2)

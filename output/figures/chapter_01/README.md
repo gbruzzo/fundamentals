@@ -7,6 +7,8 @@ PNG outputs from the Chapter 1 orchestrators (`chapters/chapter_01/`).
 ./scripts/run_all_chapter_01.sh
 ```
 
+Each saved artifact has a matching raw-data sidecar under `output/data/chapter_01/`: compressed `NPZ` arrays plus a `JSON` manifest with script provenance, figure path, array shape/dtype contracts, and summary statistics.
+
 ## Expected files
 
 | File | Producing script |

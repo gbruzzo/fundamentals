@@ -5,6 +5,24 @@ from .compose import (
     RunningPosteriorStats,
     running_stats,
 )
+from .continuous_learning import (
+    ContinuousHierarchyLayer,
+    HierarchicalContinuousModel,
+    HierarchicalMessageTerms,
+    LearningAttentionComponents,
+    LearningAttentionGradient,
+    LearningAttentionModel,
+    LearningAttentionState,
+    hierarchical_continuous_free_energy,
+    hierarchical_continuous_grad,
+    hierarchical_continuous_grad_fd,
+    hierarchical_message_terms,
+    learning_attention_free_energy,
+    learning_attention_grad,
+    learning_attention_grad_fd,
+    log_precision_to_precision,
+    log_precision_to_variance,
+)
 from .diagnostics import (
     CalibrationCurve,
     PosteriorPredictiveCheck,
@@ -49,6 +67,15 @@ from .generative_model import (
 )
 from .inference import GridBayesianInference, InferenceResult
 from .lgs import LinearGaussianSystem, LGSPosterior
+from .generalized_filtering import (
+    GeneralizedVectorModel,
+    correlated_embedding_precision,
+    generalized_vector_free_energy_grad,
+)
+from .active_inference import (
+    MultivariateActiveInferenceAgent,
+    multivariate_action_gradient,
+)
 from .posterior import (
     Posterior,
     has_credible_interval,
@@ -93,10 +120,33 @@ __all__ = [
     "InferenceResult",
     "LinearGaussianSystem",
     "LGSPosterior",
+    # Chapter 6–7 continuous active inference
+    "GeneralizedVectorModel",
+    "correlated_embedding_precision",
+    "generalized_vector_free_energy_grad",
+    "MultivariateActiveInferenceAgent",
+    "multivariate_action_gradient",
     # Composition
     "Pipeline",
     "RunningPosteriorStats",
     "running_stats",
+    # Chapter 8 — continuous learning, attention, and hierarchy
+    "LearningAttentionModel",
+    "LearningAttentionState",
+    "LearningAttentionComponents",
+    "LearningAttentionGradient",
+    "log_precision_to_precision",
+    "log_precision_to_variance",
+    "learning_attention_free_energy",
+    "learning_attention_grad",
+    "learning_attention_grad_fd",
+    "ContinuousHierarchyLayer",
+    "HierarchicalContinuousModel",
+    "HierarchicalMessageTerms",
+    "hierarchical_continuous_free_energy",
+    "hierarchical_continuous_grad",
+    "hierarchical_continuous_grad_fd",
+    "hierarchical_message_terms",
     # Type / shape helpers
     "assert_cov",
     "assert_probabilities",

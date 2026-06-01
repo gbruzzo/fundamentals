@@ -14,8 +14,8 @@ restructure them.
 
 This repo provides a tested Python implementation of the algorithms described in
 Sanjeev V. Namjoshi's *Fundamentals of Active Inference* (MIT Press, 2026),
-plus thin orchestrator scripts that reproduce every figure and numerical example
-in Chapters 1–3.
+plus thin orchestrator scripts that reproduce the figures and numerical examples
+of Chapters 1–10 (Part I §1–5, plus Part II §6–10).
 
 ## Architecture
 
@@ -26,7 +26,7 @@ The codebase follows a two-layer architecture:
   `visualizations`, `utils`, plus the strict-UI peers `menu` (stdlib text
   menu) and `web` (stdlib local web server).
 - **Layer 2 (orchestrators):** `chapters/chapter_01/` through
-  `chapters/chapter_03/` — thin scripts (≤ ~120 lines each) that wire
+  `chapters/chapter_10/` — thin scripts (≤ ~120 lines each) that wire
   library components together to produce figures and numerical results.
 
 All business logic lives in `src/`. Scripts orchestrate; they do not contain
@@ -39,24 +39,32 @@ domain logic.
 | `run.sh` | Top-level thin wrapper around the chapter-runner text menu. |
 | `pyproject.toml` / `uv.lock` | PEP 621 metadata; uv is the recommended package manager. |
 | `src/active_inference/` | Python package (import as `active_inference`) |
-| `src/active_inference/core/` | Distributions, generative process/model, exact inference, LGS, diagnostics, composition, posterior protocol, validators |
-| `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, EM/factor analysis |
-| `src/active_inference/visualizations/` | Static plots, interactive slider widgets, matplotlib animations, diagnostic figures, repo-wide style |
-| `src/active_inference/utils/` | Grid constructors, logger factory, path helpers |
+| `src/active_inference/core/` | Distributions, generative process/model, exact inference, LGS, diagnostics, composition, posterior protocol, validators, variational free energy (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), continuous active inference (Ch.7), continuous learning/attention/hierarchy (Ch.8), discrete POMDP + learning + factorial/hierarchical depth (Ch.9–10) in `pomdp.py` |
+| `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, EM/factor analysis, variational inference (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), active inference (Ch.7), continuous learning/attention (Ch.8), POMDP planning + learning + two-armed bandit + hierarchical agent (Ch.9–10) |
+| `src/active_inference/visualizations/` | Static plots, Ch.4 variational figures, the composable Ch.4–10 `unified` layer, interactive slider widgets, matplotlib animations, diagnostic figures, repo-wide colourblind-safe style |
+| `src/active_inference/utils/` | Grid constructors, logger factory, path helpers, and `save_chapter_data` NPZ+JSON export helpers |
 | `src/active_inference/menu/` | Stdlib-only text menu used by `run.sh` |
 | `src/active_inference/web/` | Stdlib-only local HTTP server used by `run.sh --web` |
 | `chapters/chapter_01/` | 4 orchestrator scripts for Part I Ch. 1 concepts |
 | `chapters/chapter_02/` | 10 examples + 2 auxiliary + 2 animations |
 | `chapters/chapter_03/` | 7 examples + 8 animations + 3 diagnostic visualizations |
+| `chapters/chapter_04/` | 5 examples + 1 animation + 3 visualizations + 1 interactive (variational inference) |
+| `chapters/chapter_05/` | 4 examples + 2 animations (predictive coding) |
+| `chapters/chapter_06/` | generalized filtering for perception (§6.1–6.6), including correlated embedding orders and Example 6.7 |
+| `chapters/chapter_07/` | active generalized filtering / action (§7.1–7.5), including multivariate AIF in generalized coordinates |
+| `chapters/chapter_08/` | learning, attention, and hierarchy in continuous state-spaces (§8.1–8.6) |
+| `chapters/chapter_09/` | discrete POMDP active inference (§9.1–§9.6) |
+| `chapters/chapter_10/` | learning & extensions (§10.1–10.4): 8 examples + 1 visualization + 3 animations |
 | `tests/` | pytest unit tests + chapter smoke tests |
 | `docs/` | Architecture, notation, chapter concept maps, topic walkthroughs, uv workflow |
 | `scripts/` | Batch figure renderer (`run_all_figures.py`) + per-chapter shell wrappers |
-| `output/figures/` | Generated PNGs (gitignored, regenerated via scripts) |
+| `output/figures/` | Generated PNGs/GIFs (gitignored, regenerated via scripts) |
+| `output/data/` | Generated raw-data NPZ arrays plus JSON metadata/manifests for every saved non-interactive chapter artifact |
 
 ## Ground Truth Sources
 
-- **Active chapter list:** Chapters 1–3 are present on disk; Ch. 1–2 are fully
-  documented in the book, Ch. 3 scripts mirror the manuscript examples.
+- **Active chapter list:** Chapters 1–10 are present on disk; each chapter's scripts mirror the manuscript examples and are
+  covered by smoke tests.
 - **Canonical import surface:** Defined in `src/active_inference/__init__.py`
   and its `__all__` list.
 - **Notation mapping:** `docs/notation.md` maps every symbol to its Python
@@ -70,6 +78,10 @@ domain logic.
 - Densities are evaluated on 1-D NumPy grids; integration uses `np.trapezoid`.
 - Every chapter script accepts `--save` for headless rendering and `--seed`
   for reproducibility.
+- With `--save`, every non-interactive chapter script must produce both the
+  visual artifact and at least one `output/data/chapter_NN/<stem>.npz` +
+  `<stem>.json` sidecar. Use `save_chapter_data` directly for bespoke exports
+  or the shared visualization save helpers for figure-derived exports.
 - Random number generators are passed explicitly via `numpy.random.Generator`
   — no global state.
 - Chapter scripts import only from `active_inference` or the Python standard
@@ -89,6 +101,9 @@ uv run pytest tests/core tests/estimators tests/utils tests/visualizations
 # Smoke tests (run every chapter script with --save)
 uv run pytest tests/chapters -v
 
+# Validate generated raw-data sidecars
+uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+
 # Coverage
 uv run pytest --cov=active_inference --cov-report=term-missing
 ```
@@ -104,11 +119,14 @@ that mainly glue imports).
    directory (≤ ~120 lines; imports only from `active_inference`).
 3. Accept `--save` and `--seed` CLI flags.
 4. Document the script in the chapter's `README.md`.
-5. The `tests/chapters/test_smoke.py` parametrize globs and the
+5. Ensure `--save` writes reconstructable raw data. Prefer plotting through
+   `save_or_show` / `save_animation`; if the script has non-plotted arrays,
+   call `save_chapter_data(chapter, stem, arrays, metadata, figures=...)`.
+6. The `tests/chapters/test_smoke.py` parametrize globs and the
    `active_inference.menu` discovery both pick the file up automatically
    as long as it follows the `example_*.py` / `animation_*.py` /
    `visualize_*.py` / `0N_*.py` naming convention.
-6. `scripts/run_all_figures.py` discovers the same way — no edit needed.
+7. `scripts/run_all_figures.py` discovers the same way — no edit needed.
 
 ## Environment management
 

@@ -4,14 +4,16 @@ Ephemeral, regenerable storage for figures (PNGs) and animations (GIFs).
 
 ## Hard rules
 
-1. **Everything here is regenerable** by `scripts/run_all_figures.py`.
-   Anything not regenerable does not belong in this folder.
-2. **Never hand-edit a file here.** If a figure needs cosmetic tweaks,
+1. **Generated media here is regenerable** by `scripts/run_all_figures.py`.
+   Anything not regenerable belongs in `docs/` or `chapters/`, not as media here.
+2. **Never hand-edit generated media.** If a figure needs cosmetic tweaks,
    change the helper in `src/active_inference/visualizations/` or the
    orchestrator in `chapters/`.
-3. **Never check in generated artifacts.** `.gitignore` excludes every
-   PNG/GIF here; per-chapter `.gitkeep` files keep the directories
-   present.
+3. **Keep docs hand-maintained.** README/AGENTS files explain the artifact
+   contract and are intentionally not cleaned by `--clean`.
+4. **Do not add new generated media to history without intent.** `.gitignore`
+   excludes new PNG/GIF media recursively; historical sample artifacts may
+   remain tracked.
 
 ## Subfolder layout
 
@@ -19,7 +21,14 @@ Ephemeral, regenerable storage for figures (PNGs) and animations (GIFs).
 output/figures/
 ├── chapter_01/   ← from chapters/chapter_01/0*.py --save
 ├── chapter_02/   ← from chapters/chapter_02/example_*.py and animation_*.py
-└── chapter_03/   ← from chapters/chapter_03/example_*.py and animation_*.py
+├── chapter_03/   ← from chapters/chapter_03/example_*.py and animation_*.py
+├── chapter_04/   ← from chapters/chapter_04/*.py
+├── chapter_05/   ← from chapters/chapter_05/*.py
+├── chapter_06/   ← from chapters/chapter_06/*.py
+├── chapter_07/   ← from chapters/chapter_07/*.py
+├── chapter_08/   ← from chapters/chapter_08/*.py
+├── chapter_09/   ← from chapters/chapter_09/*.py
+└── chapter_10/   ← from chapters/chapter_10/*.py
 ```
 
 ## Filename contract

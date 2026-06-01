@@ -27,6 +27,8 @@ def server():
     time.sleep(0.2)
     yield srv
     srv.shutdown()
+    if srv.serve_thread is not None:
+        srv.serve_thread.join(timeout=2)
     srv.server_close()
 
 
@@ -46,6 +48,12 @@ def _post(server, path: str, payload: dict):
                   headers={"Content-Type": "application/json"}, method="POST")
     with urlopen(req, timeout=10) as resp:
         return resp.status, json.loads(resp.read().decode("utf-8"))
+
+
+def _close_http_error(exc_info) -> HTTPError:
+    err = exc_info.value
+    err.close()
+    return err
 
 
 class TestRoutes:
@@ -93,7 +101,8 @@ class TestRoutes:
     def test_unknown_chapter_returns_500(self, server):
         with pytest.raises(HTTPError) as exc:
             _get(server, "/api/chapter/99")
-        assert exc.value.code in (400, 500)
+        err = _close_http_error(exc)
+        assert err.code in (400, 500)
 
     def test_doc_api_renders_markdown(self, server):
         status, _, body = _get(server, "/api/doc/architecture.md")
@@ -106,7 +115,8 @@ class TestRoutes:
     def test_path_traversal_rejected(self, server):
         with pytest.raises(HTTPError) as exc:
             _get(server, "/docs-raw/..%2F..%2Fpyproject.toml")
-        assert exc.value.code == 404
+        err = _close_http_error(exc)
+        assert err.code == 404
 
     def test_figure_serves_when_present(self, server):
         # Chapter 1 has been rendered as part of the menu smoke run earlier;
@@ -115,7 +125,8 @@ class TestRoutes:
 
         try:
             status, mime, body = _get(server, "/figures/01/01_box_scenario_stream.png")
-        except urllib.error.HTTPError:
+        except urllib.error.HTTPError as exc:
+            exc.close()
             pytest.skip("Chapter 1 figures not rendered yet")
         assert status == 200
         assert mime.startswith("image/")
@@ -148,14 +159,16 @@ class TestRunEndpoint:
         with pytest.raises(HTTPError) as exc:
             _post(server, "/api/run",
                   {"chapter": 1, "script": "nonexistent_script.py"})
-        assert exc.value.code == 500  # ValueError → 500
+        err = _close_http_error(exc)
+        assert err.code == 500  # ValueError → 500
 
     def test_run_rejects_interactive_scripts(self, server):
         # Chapter 2 has interactive_explorer.py
         with pytest.raises(HTTPError) as exc:
             _post(server, "/api/run",
                   {"chapter": 2, "script": "interactive_explorer.py"})
-        assert exc.value.code == 500
+        err = _close_http_error(exc)
+        assert err.code == 500
 
     def test_run_chapter_1_script(self, server):
         # 04_inverse_problem is cheap and exercises numpy + matplotlib end-to-end.

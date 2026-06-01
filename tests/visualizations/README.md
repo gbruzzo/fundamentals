@@ -8,6 +8,9 @@ exercised by chapter scripts under manual review.
 |---|---|
 | `visualizations/plotting.py` | [`test_plotting.py`](test_plotting.py) |
 | `visualizations/animations.py` | [`test_animations.py`](test_animations.py) |
+| `visualizations/diagnostics.py` | [`test_diagnostics.py`](test_diagnostics.py) |
+| `visualizations/unified.py` (Ch.4–10) | [`test_unified.py`](test_unified.py) |
+| `visualizations/variational.py`, `style.py` | (exercised via `test_unified.py` + chapter smoke tests; no dedicated file) |
 | `visualizations/interactive.py` | (manually verified — see Chapter 2 `interactive_explorer.py`) |
 
 ## Running
@@ -26,6 +29,11 @@ pytest tests/visualizations -v
 - `animate_*` builders return `FuncAnimation` objects.
 - `save_animation` writes a non-trivially sized GIF and closes the
   underlying figure handle.
+- Diagnostic plots (calibration, coverage, PPC, QQ, score/KL traces) render.
+- The composable `unified` layer renders Ch.4–10 figures with expected panel
+  counts, labels, legends, stat boxes, and public result traces.
+- Chapter 8 learning/attention and message-passing figures, plus Ch.9–10
+  POMDP visual helpers, are covered structurally here and by chapter smoke tests.
 
 ## Conventions
 

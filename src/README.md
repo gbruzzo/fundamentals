@@ -7,10 +7,10 @@ rather than the working tree by accident. The single subfolder
 ```
 src/
 └── active_inference/   ← import as `active_inference`
-    ├── core/             ← distributions, inference, diagnostics, compose, posterior, validators, types, lgs
-    ├── estimators/       ← MLE, MAP, gradient descent, linear regression, EM
+    ├── core/             ← distributions, inference, diagnostics, compose, posterior, validators, types, lgs, variational, predictive_coding
+    ├── estimators/       ← MLE, MAP, gradient descent, linear regression, EM, variational, predictive_coding
     ├── utils/            ← grids, logging, paths
-    ├── visualizations/   ← plotting, animations, interactive, diagnostics, style
+    ├── visualizations/   ← plotting, variational, unified, animations, interactive, diagnostics, style
     ├── menu/             ← stdlib text menu used by run.sh
     └── web/              ← stdlib local web UI used by run.sh --web
 ```

@@ -30,6 +30,7 @@ LOG = get_logger("ch3.calibration")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--seed", type=int, default=0)
@@ -40,6 +41,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -54,8 +56,8 @@ def main() -> None:
 
     # We accumulate (truth, lower(level), upper(level)) per test point.
     truths_all: list[float] = []
-    lowers_all: dict[float, list[float]] = {float(l): [] for l in levels}
-    uppers_all: dict[float, list[float]] = {float(l): [] for l in levels}
+    lowers_all: dict[float, list[float]] = {float(lev): [] for lev in levels}
+    uppers_all: dict[float, list[float]] = {float(lev): [] for lev in levels}
 
     for trial in range(args.n_trials):
         x_train = rng.uniform(0.0, 5.0, size=args.n_train)
@@ -81,9 +83,11 @@ def main() -> None:
     truths = np.asarray(truths_all)
 
     def lower_fn(level: float) -> np.ndarray:
+        """Compute a chapter-local helper quantity for the orchestrated example."""
         return np.asarray(lowers_all[float(level)])
 
     def upper_fn(level: float) -> np.ndarray:
+        """Compute a chapter-local helper quantity for the orchestrated example."""
         return np.asarray(uppers_all[float(level)])
 
     curve = calibration_curve(truths, lower_fn, upper_fn, levels)

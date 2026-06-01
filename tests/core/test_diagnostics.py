@@ -147,7 +147,6 @@ class TestKL:
         assert abs(kl) < 1e-6
 
     def test_kl_non_negative(self) -> None:
-        rng = np.random.default_rng(3)
         x = np.linspace(-5, 5, 2001)
         p = np.exp(-0.5 * (x - 0.5) ** 2) / np.sqrt(2 * np.pi)
         q = np.exp(-0.5 * (x + 0.5) ** 2) / np.sqrt(2 * np.pi)
@@ -165,7 +164,8 @@ class TestKL:
     def test_kl_inf_when_q_zero_where_p_positive(self) -> None:
         x = np.linspace(0, 1, 11)
         p = np.ones_like(x) / 1.0
-        q = np.zeros_like(x); q[0] = 1.0
+        q = np.zeros_like(x)
+        q[0] = 1.0
         assert math.isinf(grid_kl_divergence(p, q, x))
 
     def test_mvn_kl_self_zero(self) -> None:

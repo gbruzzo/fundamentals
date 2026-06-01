@@ -7,6 +7,8 @@ PNG and GIF outputs from the Chapter 2 orchestrators
 ./scripts/run_all_chapter_02.sh
 ```
 
+Each saved artifact has a matching raw-data sidecar under `output/data/chapter_02/`: compressed `NPZ` arrays plus a `JSON` manifest with script provenance, figure path, array shape/dtype contracts, and summary statistics.
+
 ## Expected files
 
 | File | Producing script |

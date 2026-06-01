@@ -16,7 +16,26 @@ trying to do.
 2. [`chapters/chapter_02.md`](chapters/chapter_02.md) → run Examples 2.1–2.10.
 3. [`chapters/chapter_03.md`](chapters/chapter_03.md) → run Examples 3.1–3.7
    plus the diagnostic visualizers.
-4. When a concept is unfamiliar, jump to the matching `topics/` page
+4. [`chapters/chapter_04.md`](chapters/chapter_04.md) → run the variational
+   examples (coordinate search, fixed-form VI, mean-field CAVI) and the
+   `animation_vfe_descent.py` GIF.
+5. [`chapters/chapter_05.md`](chapters/chapter_05.md) → run the predictive-coding
+   examples (recognition dynamics, multivariate, hierarchical) and the two
+   animation orchestrators.
+6. [`chapters/chapter_06.md`](chapters/chapter_06.md) → run generalized filtering
+   for perception: online tracking, multivariate filtering, generalized
+   coordinates, correlated embedding-order precision, and Example 6.7 vector
+   generalized filtering.
+7. [`chapters/chapter_07.md`](chapters/chapter_07.md) → run active generalized
+   filtering: start with set-point regulation, then inspect the §7.5
+   multivariate action-perception loop and animation.
+8. [`chapters/chapter_08.md`](chapters/chapter_08.md) → run learning/attention and
+   hierarchy/message-passing examples.
+9. [`chapters/chapter_09.md`](chapters/chapter_09.md) → run the categorical POMDP
+   examples: state inference, dynamic filtering, discrete VFE, Grid World, and EFE.
+10. [`chapters/chapter_10.md`](chapters/chapter_10.md) → run POMDP learning,
+    habit/precision, factorial bandit, and hierarchical examples.
+11. When a concept is unfamiliar, jump to the matching `topics/` page
    and come back.
 
 ## Path B — *I want a deep dive on a concept*

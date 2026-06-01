@@ -17,11 +17,11 @@ Conventions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 import numpy as np
 
-from .distributions import gaussian_log_pdf, mvn_log_pdf
+from .distributions import gaussian_log_pdf
 
 ArrayLike = np.ndarray
 _LOG_2PI = float(np.log(2.0 * np.pi))
@@ -240,7 +240,7 @@ def coverage_from_intervals(
     lows: np.ndarray,
     highs: np.ndarray,
 ) -> float:
-    """Empirical coverage of a fixed-mass credible interval."""
+    """Return empirical credible-interval coverage after matching shape validation."""
     truths = np.asarray(truths)
     lows = np.asarray(lows)
     highs = np.asarray(highs)
@@ -363,3 +363,115 @@ def standardize(samples: np.ndarray) -> np.ndarray:
     std = samples.std(axis=0, ddof=1, keepdims=True)
     std = np.where(std > 0, std, 1.0)
     return (samples - mean) / std
+
+
+# ---------------------------------------------------------------------------
+# Optimization / inference validation (used by the variational + predictive
+# coding layers, Chapters 4–5)
+# ---------------------------------------------------------------------------
+
+
+def gradient_check(
+    f: Callable[[float], float],
+    grad: Callable[[float], float],
+    x0: float,
+    *,
+    eps: float = 1e-5,
+) -> float:
+    r"""Max abs error between an analytic gradient and a central finite difference.
+
+    Verifies that ``grad(x0)`` matches ``(f(x0+eps) − f(x0−eps)) / (2 eps)``. This is
+    the tool that lets us *derive* gradients (e.g. predictive coding's recognition
+    dynamics) and prove the sign/scale are right rather than transcribing them.
+    Returns ``|analytic − numeric|`` (a single scalar; ``< 1e-5`` is a pass for the
+    smooth losses in this package).
+    """
+    numeric = (float(f(x0 + eps)) - float(f(x0 - eps))) / (2.0 * eps)
+    return abs(float(grad(x0)) - numeric)
+
+
+@dataclass(frozen=True)
+class ConvergenceReport:
+    """Summary of a monotone-descent trace (free energy / loss over iterations).
+
+    Attributes
+    ----------
+    monotone : bool
+        Whether the trace is non-increasing to within ``tol`` at every step.
+    final : float
+        Last value of the trace.
+    total_decrease : float
+        ``trace[0] − trace[-1]`` (≥ 0 for a descent).
+    n_steps : int
+        Number of steps (``len(trace) − 1``).
+    rate : float
+        Empirical linear-convergence factor — the geometric mean of successive
+        residual ratios ``(t[k+1] − t∞)/(t[k] − t∞)`` (``nan`` if undefined). A value
+        in ``(0, 1)`` indicates linear convergence; smaller is faster.
+    max_increase : float
+        Largest single-step increase (0.0 for a perfectly monotone trace).
+    """
+
+    monotone: bool
+    final: float
+    total_decrease: float
+    n_steps: int
+    rate: float
+    max_increase: float
+
+
+def convergence_report(trace, *, tol: float = 1e-9) -> ConvergenceReport:
+    """Diagnose a descent ``trace`` (e.g. ``result.free_energies``).
+
+    Checks monotonicity, total decrease, and estimates the empirical convergence
+    rate against the final value. Works for any 1-D sequence of losses.
+    """
+    t = np.asarray(trace, dtype=float).ravel()
+    if t.size < 2:
+        raise ValueError("trace must have at least two entries")
+    diffs = np.diff(t)
+    max_increase = float(max(0.0, diffs.max()))
+    monotone = bool(np.all(diffs <= tol))
+    t_inf = float(t[-1])
+    resid = t[:-1] - t_inf
+    # ratios of successive residuals, where the previous residual is non-trivial
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratios = (t[1:] - t_inf) / resid
+    mask = np.isfinite(ratios) & (np.abs(resid) > 1e-12) & (ratios > 0)
+    rate = float(np.exp(np.mean(np.log(ratios[mask])))) if np.any(mask) else float("nan")
+    return ConvergenceReport(
+        monotone=monotone,
+        final=t_inf,
+        total_decrease=float(t[0] - t[-1]),
+        n_steps=int(t.size - 1),
+        rate=rate,
+        max_increase=max_increase,
+    )
+
+
+@dataclass(frozen=True)
+class OracleAgreement:
+    """Agreement between an estimate and a known oracle value."""
+
+    abs_error: float
+    passed: bool
+    estimate: float
+    oracle: float
+    tol: float
+
+
+def oracle_agreement(estimate: float, oracle: float, *, tol: float = 1e-2) -> OracleAgreement:
+    """Compare an estimate against an oracle (e.g. PC fixed point vs grid posterior).
+
+    Returns the absolute error and whether it is within ``tol``. This is the
+    anti-theater check used across Chapters 4–5: a variational / predictive-coding
+    estimate is only "correct" when an independent oracle confirms it.
+    """
+    err = abs(float(estimate) - float(oracle))
+    return OracleAgreement(
+        abs_error=err,
+        passed=bool(err <= tol),
+        estimate=float(estimate),
+        oracle=float(oracle),
+        tol=float(tol),
+    )

@@ -81,7 +81,7 @@ def squared_loss_grad(
     intercept: bool = True,
     l2: float = 0.0,
 ) -> np.ndarray:
-    """Analytic gradient of :func:`squared_loss` w.r.t. ``theta``."""
+    """Return analytic squared-loss gradient with optional intercept and L2 penalty."""
     X = add_intercept(X) if intercept else np.asarray(X, dtype=float)
     residuals = X @ theta - y
     return X.T @ residuals + l2 * theta
@@ -189,7 +189,7 @@ def gd_linear_regression(
 
 @dataclass
 class BLRPosterior:
-    """Posterior over the parameter vector ``θ``."""
+    """Store Bayesian linear-regression posterior mean/covariance for parameter vector theta."""
 
     mean: np.ndarray
     cov: np.ndarray

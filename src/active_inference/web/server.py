@@ -66,6 +66,7 @@ DOCS_DIR = REPO_ROOT / "docs"
 
 
 def _chapter_figure_dir(chapter: int) -> Path:
+    """Return chapter-specific metadata used for discovery and display."""
     return OUTPUT_DIR / f"chapter_{chapter:02d}"
 
 
@@ -73,6 +74,7 @@ _DOC_SUMMARY_LIMIT = 220
 
 
 def _list_figures(chapter: int) -> list[dict[str, Any]]:
+    """List repository resources needed by the local browser UI."""
     base = _chapter_figure_dir(chapter)
     if not base.is_dir():
         return []
@@ -177,6 +179,7 @@ def _guess_generator(figure: Path, chapter: int) -> str | None:
 
 
 def _human_bytes(n: int) -> str:
+    """Format a machine value for compact human-readable display."""
     units = ("B", "KB", "MB", "GB")
     value = float(n)
     for unit in units:
@@ -187,6 +190,7 @@ def _human_bytes(n: int) -> str:
 
 
 def _human_time(epoch: float) -> str:
+    """Format a machine value for compact human-readable display."""
     delta = max(0.0, time.time() - epoch)
     if delta < 60:
         return "just now"
@@ -245,6 +249,7 @@ _CHAPTER_SUBTITLES: dict[int, str] = {
 
 
 def _chapter_subtitle(chapter: int) -> str:
+    """Return chapter-specific metadata used for discovery and display."""
     if chapter in _CHAPTER_SUBTITLES:
         return _CHAPTER_SUBTITLES[chapter]
     readme = CHAPTER_DIRS.get(chapter, Path()) / "README.md"
@@ -274,6 +279,7 @@ _CHAPTER_DOC_MAP: dict[int, list[str]] = {
 
 
 def _list_chapter_docs(chapter: int) -> list[dict[str, str]]:
+    """List repository resources needed by the local browser UI."""
     out: list[dict[str, str]] = []
     for rel in _CHAPTER_DOC_MAP.get(chapter, []):
         path = DOCS_DIR / rel
@@ -287,6 +293,7 @@ def _list_chapter_docs(chapter: int) -> list[dict[str, str]]:
 
 
 def _doc_title(path: Path) -> str:
+    """Return documentation metadata used by the local browser UI."""
     try:
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
@@ -336,10 +343,12 @@ def _md_to_html(md: str) -> str:
     """
 
     def esc(s: str) -> str:
+        """Support request handling for the local chapter browser UI."""
         return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
 
     def inline(line: str) -> str:
         # protect code spans first
+        """Support request handling for the local chapter browser UI."""
         out: list[str] = []
         i = 0
         while i < len(line):
@@ -374,22 +383,26 @@ def _md_to_html(md: str) -> str:
     in_blockquote = False
 
     def close_lists() -> None:
+        """Support request handling for the local chapter browser UI."""
         while list_stack:
             html.append(f"</{list_stack.pop()}>")
 
     def close_blockquote() -> None:
+        """Support request handling for the local chapter browser UI."""
         nonlocal in_blockquote
         if in_blockquote:
             html.append("</blockquote>")
             in_blockquote = False
 
     def close_table() -> None:
+        """Support request handling for the local chapter browser UI."""
         nonlocal in_table
         if in_table:
             html.append("</tbody></table>")
             in_table = False
 
     def flush_blocks() -> None:
+        """Support request handling for the local chapter browser UI."""
         close_lists()
         close_blockquote()
         close_table()
@@ -523,14 +536,17 @@ def _safe_subpath(base: Path, rel: str) -> Path | None:
 
 
 class _Handler(BaseHTTPRequestHandler):
+    """Handle local web-server state for the chapter browser UI."""
     server_version = "ActiveInferenceWeb/0.1"
 
     # Quieter access logs.
     def log_message(self, fmt: str, *args: Any) -> None:  # noqa: D401
+        """Support request handling for the local chapter browser UI."""
         LOG.info("%s - " + fmt, self.address_string(), *args)
 
     # ---------- routing ----------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802
+        """Support request handling for the local chapter browser UI."""
         url = urlparse(self.path)
         path = url.path
         try:
@@ -570,6 +586,7 @@ class _Handler(BaseHTTPRequestHandler):
             return self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
 
     def do_POST(self) -> None:  # noqa: N802
+        """Support request handling for the local chapter browser UI."""
         url = urlparse(self.path)
         path = url.path
         try:
@@ -587,6 +604,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # ---------- payloads --------------------------------------------------
     def _index_payload(self) -> dict[str, Any]:
+        """Support request handling for the local chapter browser UI."""
         chapters = []
         for entry in discover_chapters():
             scripts = entry.scripts
@@ -610,6 +628,7 @@ class _Handler(BaseHTTPRequestHandler):
         }
 
     def _chapter_payload(self, number: int) -> dict[str, Any]:
+        """Return chapter-specific metadata used for discovery and display."""
         if number not in CHAPTER_DIRS:
             raise ValueError(f"Unknown chapter {number!r}")
         scripts = discover_scripts(number, include_interactive=True)
@@ -631,6 +650,7 @@ class _Handler(BaseHTTPRequestHandler):
         }
 
     def _doc_payload(self, doc_id: str) -> dict[str, Any]:
+        """Return documentation metadata used by the local browser UI."""
         rel = doc_id.replace("__", "/")
         path = _safe_subpath(DOCS_DIR, rel)
         if path is None or path.suffix.lower() != ".md":
@@ -643,6 +663,7 @@ class _Handler(BaseHTTPRequestHandler):
         }
 
     def _run_payload(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Support request handling for the local chapter browser UI."""
         chapter = int(data.get("chapter", 0))
         name = str(data.get("script", "")).strip()
         if chapter not in CHAPTER_DIRS:
@@ -663,6 +684,7 @@ class _Handler(BaseHTTPRequestHandler):
         }
 
     def _launch_interactive_payload(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Support request handling for the local chapter browser UI."""
         name = str(data.get("script", "")).strip()
         # Search every chapter, since interactive scripts can sit anywhere.
         match: ScriptEntry | None = None
@@ -688,6 +710,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     # ---------- response helpers ------------------------------------------
     def _serve_static_file(self, base: Path, rel: str) -> None:
+        """Serve a static local artifact through the web interface."""
         path = _safe_subpath(base, rel)
         if path is None:
             return self._send_error(HTTPStatus.NOT_FOUND, f"No such file {rel!r}")
@@ -700,14 +723,17 @@ class _Handler(BaseHTTPRequestHandler):
         self._send_bytes(data, mime)
 
     def _send_html(self, html: str) -> None:
+        """Serialize and send an HTTP response from the local server."""
         self._send_bytes(html.encode("utf-8"), "text/html; charset=utf-8")
 
     def _send_json(self, payload: Any) -> None:
+        """Serialize and send an HTTP response from the local server."""
         body = json.dumps(payload).encode("utf-8")
         self._send_bytes(body, "application/json; charset=utf-8")
 
     def _send_bytes(self, body: bytes, mime: str,
                     status: HTTPStatus = HTTPStatus.OK) -> None:
+        """Serialize and send an HTTP response from the local server."""
         self.send_response(status)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(body)))
@@ -716,6 +742,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _send_error(self, status: HTTPStatus, message: str) -> None:
+        """Serialize and send an HTTP response from the local server."""
         body = json.dumps({"error": message}).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -734,9 +761,11 @@ class _Server(ThreadingHTTPServer):
 
     daemon_threads = True
     app_version: str = "0.1.0"
+    serve_thread: threading.Thread | None = None
 
 
 def _resolve_version() -> str:
+    """Support request handling for the local chapter browser UI."""
     try:
         from .. import __version__
         return __version__
@@ -783,6 +812,7 @@ def run_server(
     if not block:
         thread = threading.Thread(target=server.serve_forever, daemon=True,
                                   name="ActiveInferenceWebServer")
+        server.serve_thread = thread
         thread.start()
         if open_browser:
             _open_browser_async(url)
@@ -799,7 +829,9 @@ def run_server(
 
 
 def _open_browser_async(url: str) -> None:
+    """Open the local web interface asynchronously after startup."""
     def _open() -> None:
+        """Open the local web interface asynchronously after startup."""
         time.sleep(0.6)  # give serve_forever a chance to start accepting
         try:
             webbrowser.open(url, new=2)
@@ -819,6 +851,7 @@ launch = run_server
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(
         prog="active_inference.web",
         description="Launch the local web UI for the chapter orchestrators.",
@@ -837,6 +870,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the user-facing entry point for this interface."""
     args = _parse_args(argv)
     run_server(
         host=args.host,

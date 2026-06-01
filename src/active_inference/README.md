@@ -28,6 +28,9 @@ catalogue.
 | `Pipeline` | Class | `core.compose` | One-line process + model + grid wiring with `run`, `sample`, `infer`. |
 | `RunningPosteriorStats` | Dataclass | `core.compose` | Per-step posterior trace (means, stds, KLs, log-evidences). |
 | `running_stats` | Function | `core.compose` | Compute a `RunningPosteriorStats` for an observation stream. |
+| `LearningAttentionModel` / `LearningAttentionState` | Dataclass | `core.continuous_learning` | Chapter 8 continuous-state model for hidden state, parameter, and log-precision inference. |
+| `learning_attention_free_energy` / `learning_attention_grad` | Function | same | VFE and analytic gradient for Chapter 8 learning/attention. |
+| `HierarchicalContinuousModel` / `hierarchical_message_terms` | Dataclass/function | same | Two-layer continuous hierarchy and forward/backward message decomposition. |
 
 ### Core — distributions
 
@@ -73,6 +76,14 @@ catalogue.
 | `require_finite_array`, `require_monotone`, `require_same_length` | same | Array-content validation. |
 | `require_positive_scalar`, `require_non_negative_scalar`, `require_int_at_least`, `require_in_unit_interval` | same | Scalar validation. |
 
+### Core — Chapters 6–7 continuous active inference
+
+| Name | Module | Role |
+|---|---|---|
+| `gaussian_temporal_covariance` / `correlated_embedding_precision` | `core.generalized_filtering` | Chapter 6 §6.6 `S(γ)` and full generalized precision matrices. |
+| `GeneralizedVectorModel` / `generalized_vector_free_energy_grad` | same | Vector generalized-coordinate model and FD-verified VFE gradient. |
+| `MultivariateActiveInferenceAgent` / `multivariate_action_gradient` | `core.active_inference` | Chapter 7 §7.5 vector action through the generalized sensory channel. |
+
 ### Estimators
 
 | Name | Type | Module | Role |
@@ -92,6 +103,11 @@ catalogue.
 | `factor_analysis_e_step` / `factor_analysis_m_step` | Function | same | Single-step EM helpers. |
 | `incomplete_log_likelihood` | Function | same | Marginal log-likelihood of the observation data. |
 | `FactorAnalysisResult` | Dataclass | same | Loadings, log-likelihood trace, convergence flag. |
+| `simulate_learning_attention` | Function | `estimators.continuous_learning` | Chapter 8 perception, first-order parameter learning, and second-order log-precision attention. |
+| `LearningAttentionResult` | Dataclass | same | Hidden-state, parameter, precision, prediction-error, and VFE traces. |
+| `generalized_measurements_from_series` / `generalized_vector_filter` | Function | `estimators.generalized_filtering` | Chapter 6 §6.6 generalized measurement tensors and vector filter. |
+| `simulate_multivariate_active_inference` | Function | `estimators.active_inference` | Chapter 7 §7.5 vector action-perception loop. |
+| `MultivariateActiveInferenceResult` | Dataclass | same | Vector state, belief, action, generalized-measurement, error, and VFE traces. |
 
 ### Utilities
 
@@ -125,7 +141,11 @@ catalogue.
 | `animate_sufficient_statistics` | same | Running sufficient statistics over a Gaussian stream. |
 | `animate_calibration_growth` | same | Calibration curve filling in as data arrives. |
 | `animate_precision_sweep` / `animate_bimodal_emergence` / `animate_lgs_online` / `animate_blr_predictive_band` | same | Chapter-3 animation drivers. |
+| `animate_learning_attention` | same | Chapter 8 learning/attention convergence GIF. |
+| `animate_multivariate_active_inference` | same | Chapter 7 §7.5 vector action-perception GIF. |
 | `save_animation` | same | Persist a `FuncAnimation` to a GIF / MP4. |
+| `plot_correlated_embedding_precision` / `plot_generalized_vector_filter` / `plot_multivariate_active_inference` | `visualizations.unified` | Chapter 6 §6.6 and Chapter 7 §7.5 educational figures. |
+| `plot_learning_attention` / `plot_hierarchical_message_passing` | `visualizations.unified` | Chapter 8 learning/attention traces and hierarchy message-passing diagram. |
 | `plot_calibration` / `plot_cdf_comparison` / `plot_coverage_curve` | `visualizations.diagnostics` | Calibration & coverage diagnostics. |
 | `plot_kl_trace` / `plot_score_trace` / `plot_running_statistics` | same | Running posterior diagnostic plots. |
 | `plot_qq` / `plot_posterior_predictive_check` | same | Distributional diagnostics. |

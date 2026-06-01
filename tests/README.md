@@ -6,11 +6,13 @@ chapter orchestrator.
 
 ```
 tests/
-├── core/            ← tests/core mirrors src/active_inference/core
-├── estimators/      ← tests/estimators mirrors src/active_inference/estimators
-├── utils/           ← tests/utils mirrors src/active_inference/utils
-├── visualizations/  ← tests/visualizations mirrors src/active_inference/visualizations
-└── chapters/        ← subprocess smoke tests for chapters/chapter_0{1,2,3}/
+├── core/            ← mirrors src/active_inference/core
+├── estimators/      ← mirrors src/active_inference/estimators
+├── utils/           ← mirrors src/active_inference/utils
+├── visualizations/  ← mirrors src/active_inference/visualizations
+├── menu/            ← mirrors src/active_inference/menu
+├── web/             ← mirrors src/active_inference/web
+└── chapters/        ← subprocess smoke tests for chapters/chapter_0{1..10}/
 ```
 
 ## Running
@@ -36,11 +38,13 @@ pytest --cov=active_inference --cov-report=term-missing
 
 | Folder | Mirrors | Files | What's tested |
 |---|---|---|---|
-| `core/` | `src/active_inference/core/` | `test_distributions.py`, `test_distributions_mvn.py`, `test_generative_process.py`, `test_generative_model.py`, `test_inference.py`, `test_lgs.py` | Univariate + multivariate densities, generative process/model classes, grid Bayesian inference, closed-form LGS posterior. |
-| `estimators/` | `src/active_inference/estimators/` | `test_mle.py`, `test_map.py`, `test_gradient_descent.py`, `test_linear_regression.py`, `test_em.py` | Closed-form vs iterative MLE/MAP, OLS / BLR, factor-analysis EM monotonicity & subspace recovery. |
+| `core/` | `src/active_inference/core/` | Mirrors core modules including `test_continuous_learning.py` | Densities, generative process/model, grid Bayes, LGS, variational free energy (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), active inference (Ch.7), continuous learning/attention/hierarchy (Ch.8), POMDPs (Ch.9–10), diagnostics, compose, posterior protocol, validators, types. |
+| `estimators/` | `src/active_inference/estimators/` | Mirrors estimator modules including `test_continuous_learning.py` | Closed-form vs iterative MLE/MAP, OLS / BLR, EM, variational inference (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), active inference (Ch.7), continuous learning/attention (Ch.8), POMDP estimators, cross-estimator recovery. |
 | `utils/` | `src/active_inference/utils/` | `test_grids.py`, `test_io.py`, `test_logging.py` | Grid validation, path conventions, idempotent logger factory. |
-| `visualizations/` | `src/active_inference/visualizations/` | `test_plotting.py`, `test_animations.py` | Figures save correctly, animations are valid `FuncAnimation` objects. |
-| `chapters/` | `chapters/chapter_0{1,2,3}/` | `test_smoke.py` | Every chapter script runs to exit 0 with `--save`. |
+| `visualizations/` | `src/active_inference/visualizations/` | `test_plotting.py`, `test_animations.py`, `test_diagnostics.py`, `test_unified.py` | Figures save correctly, animations are valid `FuncAnimation` objects, diagnostic plots, the composable Ch.4–10 `unified` layer. |
+| `menu/` | `src/active_inference/menu/` | `test_runner.py` | Chapter/script discovery, classification, menu rendering, resolution. |
+| `web/` | `src/active_inference/web/` | `test_server.py` | Routes, markdown converter, run endpoint, templates, metadata, assets. |
+| `chapters/` | `chapters/chapter_0{1..10}/` | `test_smoke.py` | Every chapter script (examples, animations, visualizations) runs to exit 0 with `--save` and `PYTHONWARNINGS=error`. |
 
 ## Design Decisions
 

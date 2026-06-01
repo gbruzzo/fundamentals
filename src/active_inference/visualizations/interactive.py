@@ -7,7 +7,6 @@ that has a display.
 
 from __future__ import annotations
 
-from typing import Optional
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,6 +40,7 @@ def interactive_inference(
     plt.subplots_adjust(left=0.07, right=0.97, top=0.85, bottom=0.32, wspace=0.35)
 
     def compute(y, m_x, s2_x, sigma2_y):
+        """Compute the current inference result from interactive control values."""
         model = LinearGaussianModel(
             beta0=beta0, beta1=beta1, sigma2_y=sigma2_y,
             m_x=m_x, s2_x=s2_x, prior_kind="gaussian",
@@ -79,6 +79,7 @@ def interactive_inference(
     s_sy = Slider(ax_sy, "lik var sigma2_y", 1e-3, 4.0, valinit=sigma2_y_init)
 
     def update(_event=None):
+        """Update interactive or animated artists for the current state."""
         r = compute(s_y.val, s_mx.val, s_sx.val, s_sy.val)
         line_prior.set_ydata(r.prior)
         line_lik.set_ydata(r.likelihood)
@@ -125,6 +126,7 @@ def interactive_precision(
     x_grid = make_grid(x_low, x_high, 500)
 
     def compute(log_ratio: float):
+        """Compute the current inference result from interactive control values."""
         ratio = 10 ** log_ratio
         sigma2_y = 1.0 / ratio
         s2_x = ratio
@@ -162,6 +164,7 @@ def interactive_precision(
     )
 
     def update(_event=None):
+        """Update interactive or animated artists for the current state."""
         r = compute(s.val)
         line_prior.set_ydata(r.prior / np.max(r.prior))
         line_lik.set_ydata(r.likelihood / np.max(r.likelihood))

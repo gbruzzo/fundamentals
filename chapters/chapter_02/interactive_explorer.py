@@ -26,12 +26,14 @@ from active_inference.visualizations import (
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--mode", choices=("full", "precision"), default="full")
     return p.parse_args()
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     if args.mode == "full":
         interactive_inference()

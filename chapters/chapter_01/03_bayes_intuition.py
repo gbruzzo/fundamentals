@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 from active_inference import (
     GridBayesianInference,
     LinearGaussianModel,
-    LinearGaussianProcess,
     get_logger,
     make_grid,
 )
@@ -38,6 +37,7 @@ LOG = get_logger("ch1.bayes")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--seed", type=int, default=2)
@@ -46,11 +46,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
-    rng = np.random.default_rng(args.seed)
 
     x_grid = make_grid(0.0, 5.0, 500)
-    process = LinearGaussianProcess(beta0=3.0, beta1=2.0, sigma2_y=0.25, rng=rng)
     model = LinearGaussianModel(
         beta0=3.0, beta1=2.0, sigma2_y=0.25,
         m_x=4.0, s2_x=0.25, prior_kind="gaussian",

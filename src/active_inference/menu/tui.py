@@ -46,6 +46,7 @@ BANNER = r"""
 
 
 def _term_width(default: int = 80) -> int:
+    """Return the terminal width used for text-menu layout."""
     try:
         return shutil.get_terminal_size((default, 20)).columns
     except OSError:
@@ -81,6 +82,7 @@ def render_menu(chapters: Sequence[ChapterEntry]) -> str:
 
 
 def _print_scripts(chapter: ChapterEntry) -> None:
+    """Print a formatted section of discovered chapter scripts."""
     print(f"\n{chapter.title} — {len(chapter.scripts)} script(s)")
     for i, script in enumerate(chapter.scripts, start=1):
         marker = {
@@ -210,6 +212,7 @@ def prompt_menu(
 
 
 def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(
         prog="active_inference.menu",
         description="Text menu for running chapter orchestrator scripts.",
@@ -235,6 +238,7 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """Run the user-facing entry point for this interface."""
     args = _parse_args(argv)
     save = not args.no_save
     include_animations = not args.no_animations

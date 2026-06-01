@@ -10,6 +10,8 @@ historical batch workflow.
 | File | Description |
 |---|---|
 | `run_all_figures.py` | Render all chapter figures to `output/figures/`. |
+| `validate_rendered_figures.py` | Check rendered PNG/GIF artifacts for corruption, blank output, tiny dimensions, and trivial GIFs. |
+| `validate_raw_data_exports.py` | Check `output/data/` NPZ+JSON sidecars for missing partners, invalid arrays, and manifest drift. |
 | `run_all_chapter_01.sh` | Shell shortcut for `--chapters 1`. |
 | `run_all_chapter_02.sh` | Shell shortcut for `--chapters 2`. |
 | `run_all_chapter_03.sh` | Shell shortcut for `--chapters 3`. |
@@ -17,15 +19,14 @@ historical batch workflow.
 ## Usage
 
 ```bash
-# Render everything (chapters 1, 2, and 3)
+# Render everything (chapters 1–10)
 uv run python scripts/run_all_figures.py
 
 # Render specific chapters
 uv run python scripts/run_all_figures.py --chapters 1
-uv run python scripts/run_all_figures.py --chapters 2
-uv run python scripts/run_all_figures.py --chapters 3
+uv run python scripts/run_all_figures.py --chapters 4 5
 
-# Clean old figures before re-rendering
+# Clean old generated figure media before re-rendering
 uv run python scripts/run_all_figures.py --clean
 
 # Skip slow GIF renderers
@@ -33,6 +34,10 @@ uv run python scripts/run_all_figures.py --no-animations
 
 # Continue even if one script fails
 uv run python scripts/run_all_figures.py --keep-going
+
+# Validate rendered artifacts after a render
+uv run python scripts/validate_rendered_figures.py --root output/figures
+uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
 
 # Combine flags
 uv run python scripts/run_all_figures.py --clean --keep-going --chapters 2
@@ -50,12 +55,20 @@ with the system `python`.
 `run_all_figures.py`:
 
 - Sets `MPLBACKEND=Agg` so it works on headless servers and in CI.
+- Sets `PYTHONWARNINGS=error` so chapter scripts cannot hide warning regressions.
 - Adds `src/` to `PYTHONPATH` so `import active_inference` works without
   installing the package.
+- `--clean` removes stale generated media files while preserving hand-maintained
+  documentation in `output/figures/` and stale raw-data `.npz` / `.json`
+  files while preserving documentation in `output/data/`.
+- Every `--save` script is expected to produce both visual artifacts and
+  raw-data sidecars through `save_chapter_data` (usually called indirectly by
+  shared figure/animation helpers).
 - Chapter 1: runs files matching `0*.py` in `chapters/chapter_01/`.
 - Chapter 2: runs all `example_*.py` + `visualize_*.py` + `animation_*.py`
   files, skipping anything with `interactive` in the name.
-- Chapter 3: same conventions as chapter 2.
+- Chapters 3–10: same conventions as chapter 2 (`--chapters` accepts any
+  of 1–10).
 - Reports success/failure per script and exits non-zero on first failure
   (unless `--keep-going`).
 
@@ -81,6 +94,8 @@ surface fits the situation:
 | Hands-on exploration in the terminal | `./run.sh` |
 | Browser gallery + render buttons | `./run.sh --web` |
 | CI / nightly figure regen | `scripts/run_all_figures.py` |
+| Artifact QA after render | `scripts/validate_rendered_figures.py` |
+| Raw-data QA after render | `scripts/validate_raw_data_exports.py` |
 | Re-render a single chapter | any of the three |
 | Programmatic discovery | `active_inference.menu.runner` |
 

@@ -1,24 +1,32 @@
-# `output/data/` — serialized numerical results
+# `output/data/` — Raw Numerical Exports
 
-Reserved for `.npz`, `.json`, and `.csv` files produced by chapter
-orchestrators that want to persist non-figure outputs (e.g., posterior
-samples, learning curves, EM trajectories).
+This directory stores reproducible raw data for chapter artifacts. Every
+non-interactive chapter script that runs with `--save` writes at least one
+paired export:
 
-Currently empty — orchestrators write their numbers into figures rather
-than separate files. The directory is kept under version control via a
-`.gitkeep` so it always exists for scripts that want it.
+- `chapter_NN/<stem>.npz` — compressed `NPZ` arrays, numeric only.
+- `chapter_NN/<stem>.json` — `JSON` metadata with script name, chapter,
+  CLI args, seed when present, figure paths, array names/shapes/dtypes, and
+  per-array summary statistics.
 
-## Conventions
+The shared figure helpers export plotted reconstruction data automatically.
+Scripts that need bespoke arrays can call `save_chapter_data(chapter, stem,
+arrays, metadata, figures=...)`.
 
-- File names mirror the orchestrator that produced them
-  (`example_3_7_em_trajectory.npz`, etc.).
-- `.npz` for arrays, `.json` for metadata, `.csv` only when a result
-  needs to be opened in non-Python tools.
-- Generated content is gitignored (`.gitignore` excludes `output/data/*`
-  except `.gitkeep`).
+## Validation
+
+```bash
+python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+```
+
+The validator rejects missing JSON/NPZ partners, empty arrays, object arrays,
+non-finite values, and shape/dtype manifest drift.
 
 ## Regenerate
 
 ```bash
-python scripts/run_all_figures.py --clean
+python scripts/run_all_figures.py --clean --chapters 1 2 3 4 5 6 7 8 9 10
 ```
+
+Generated `.npz` and `.json` files are ignored by git. README/AGENTS files are
+hand-maintained so the raw-data contract remains visible.

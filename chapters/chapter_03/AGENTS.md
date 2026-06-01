@@ -18,7 +18,16 @@ analysis.
 | [`example_3_6_lgs_food_localization.py`](example_3_6_lgs_food_localization.py) | ~110 | Multivariate hidden-state inference for a 2-D location. |
 | [`example_3_7_factor_analysis_em.py`](example_3_7_factor_analysis_em.py) | ~125 | EM on synthetic FA data; loadings + noise variances recovered. |
 | [`animation_blr_tightening.py`](animation_blr_tightening.py) | ~75 | GIF: 2-D BLR posterior tightening as observations arrive. |
+| [`animation_blr_predictive_band.py`](animation_blr_predictive_band.py) | ~75 | GIF: predictive band shrinking with each new observation. |
 | [`animation_em_convergence.py`](animation_em_convergence.py) | ~75 | GIF: marginal LL + loadings matrix evolving per EM iteration. |
+| [`animation_em_steps.py`](animation_em_steps.py) | ~75 | GIF: E-step / M-step alternation of factor-analysis EM. |
+| [`animation_lgs_online.py`](animation_lgs_online.py) | ~75 | GIF: online 2-D LGS posterior collapsing per sample. |
+| [`animation_precision_sweep.py`](animation_precision_sweep.py) | ~75 | GIF: posterior shape as prior/likelihood precision varies. |
+| [`animation_bimodal_emergence.py`](animation_bimodal_emergence.py) | ~75 | GIF: bi-modal posterior from a non-injective generator. |
+| [`animation_sufficient_statistics.py`](animation_sufficient_statistics.py) | ~75 | GIF: running sufficient statistics over a Gaussian stream. |
+| [`visualize_calibration.py`](visualize_calibration.py) | ~80 | Empirical-vs-nominal coverage curve for a BLR forecast. |
+| [`visualize_coverage.py`](visualize_coverage.py) | ~80 | Coverage sweep across credible levels. |
+| [`visualize_posterior_predictive.py`](visualize_posterior_predictive.py) | ~85 | Posterior predictive check on regression residuals. |
 
 ## Running
 

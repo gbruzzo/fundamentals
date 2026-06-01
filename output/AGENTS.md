@@ -1,7 +1,8 @@
 # `output/` — agent guide
 
-Generated artifacts produced by the chapter orchestrators. **Treat this
-folder as ephemeral**: it is fully regenerable from source.
+Generated artifacts produced by the chapter orchestrators. Treat generated
+media as ephemeral and reproducible from source; keep the README/AGENTS files
+as hand-maintained documentation.
 
 ## Subfolders
 
@@ -10,7 +11,14 @@ folder as ephemeral**: it is fully regenerable from source.
 | `output/figures/chapter_01/` | `chapters/chapter_01/0*.py --save` | PNG figures for Chapter 1. |
 | `output/figures/chapter_02/` | `chapters/chapter_02/example_*.py --save` + `animation_*.py --save` | PNGs + GIFs for Chapter 2. |
 | `output/figures/chapter_03/` | `chapters/chapter_03/example_*.py --save` + `animation_*.py --save` | PNGs + GIFs for Chapter 3. |
-| `output/data/` | reserved for serialized numerical results (`.npz`, `.json`) | currently empty. |
+| `output/figures/chapter_04/` | `chapters/chapter_04/*.py --save` | PNGs + GIF for Chapter 4 (variational inference). |
+| `output/figures/chapter_05/` | `chapters/chapter_05/*.py --save` | PNGs + GIFs for Chapter 5 (predictive coding). |
+| `output/figures/chapter_06/` | `chapters/chapter_06/*.py --save` | PNGs for Chapter 6 (generalized filtering, correlated embedding orders, Example 6.7). |
+| `output/figures/chapter_07/` | `chapters/chapter_07/*.py --save` | PNGs + GIF for Chapter 7 (active generalized filtering, §7.5 vector action). |
+| `output/figures/chapter_08/` | `chapters/chapter_08/*.py --save` | PNGs + GIF for Chapter 8 (learning, attention, hierarchy). |
+| `output/figures/chapter_09/` | `chapters/chapter_09/*.py --save` | PNGs + GIFs for Chapter 9 (discrete POMDP active inference). |
+| `output/figures/chapter_10/` | `chapters/chapter_10/*.py --save` | PNGs + GIFs for Chapter 10 (POMDP learning and extensions). |
+| `output/data/chapter_NN/` | `--save` chapter runs via `save_chapter_data` | raw numerical NPZ arrays plus JSON manifests. |
 
 ## Conventions
 
@@ -19,16 +27,22 @@ folder as ephemeral**: it is fully regenerable from source.
 - Animations use the GIF format via the bundled pillow writer — no
   FFmpeg / ImageMagick install required.
 - Default DPI is 150 for PNGs, 110 for GIF frames.
+- Every non-interactive `--save` run must pair visual output with raw-data
+  sidecars under `output/data/chapter_NN/`. The JSON manifest records script
+  provenance, CLI args, seed when present, figure paths, array shapes/dtypes,
+  and summary statistics.
 
 ## Hygiene
 
-- `.gitignore` excludes everything under `output/figures/*` and
-  `output/data/*` (with `.gitkeep` placeholders kept) so generated
-  artifacts don't pollute Git history.
+- `.gitignore` excludes generated media under `output/figures/**` and
+  data files under `output/data/**`; README/AGENTS files and `.gitkeep`
+  placeholders stay visible.
 - To wipe and regenerate everything:
 
   ```bash
   python scripts/run_all_figures.py --clean
+  python scripts/validate_rendered_figures.py --root output/figures
+  python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
   ```
 
 ## Don't put

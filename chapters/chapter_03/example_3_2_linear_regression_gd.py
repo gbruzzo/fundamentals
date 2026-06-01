@@ -24,7 +24,6 @@ from active_inference import (
 )
 from active_inference.estimators.linear_regression import (
     add_intercept,
-    squared_loss,
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
@@ -33,6 +32,7 @@ LOG = get_logger("ch3.ex2")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--seed", type=int, default=1)
@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     rng = np.random.default_rng(args.seed)
 

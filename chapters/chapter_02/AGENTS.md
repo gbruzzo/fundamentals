@@ -3,8 +3,8 @@
 ## Overview
 
 Chapter 2 turns the conceptual ideas of Chapter 1 into the canonical
-linear-Gaussian Bayesian inference recipe and walks through nine numbered
-examples exploring variations of it.
+linear-Gaussian Bayesian inference recipe and walks through ten numbered
+examples (2.1–2.10) exploring variations of it.
 
 Directory: `/chapters/chapter_02/`
 
@@ -24,6 +24,8 @@ Directory: `/chapters/chapter_02/`
 | `example_2_10_gradient_descent.py` | §2.5.2 | Iterative MLE/MAP via gradient descent |
 | `visualize_generative_model.py` | §2.4 | Joint density `p(x, y)` as heatmap + 3-D surface |
 | `interactive_explorer.py` | bonus | Slider-driven exploration (two modes: `full`, `precision`) |
+| `animation_sequential.py` | bonus | GIF: posterior collapsing as i.i.d. samples arrive |
+| `animation_gradient_descent.py` | bonus | GIF: MLE/MAP iterate rolling down the loss curve |
 
 Common CLI flags across all example scripts: `--save` (headless), `--seed`.
 Some scripts accept `--x-true`, `--y-obs`, `--n-samples`, `--epsilon2`, `--lr`,

@@ -1,18 +1,23 @@
 # `tests/chapters/` — agent guide
 
 Subprocess-based smoke tests for the chapter orchestrators in
-`chapters/chapter_0{1,2,3}/`.
+`chapters/chapter_0{1..10}/`.
 
 ## Discovery model
 
-Scripts are discovered by **glob pattern**, not by a hard-coded list:
+Scripts are discovered by **glob pattern**, not by a hard-coded list
+(`CHAPTER_DIRS` registers chapters 1–10):
 
 ```python
 CHAPTER_1_SCRIPTS    = sorted(CHAPTER_DIRS[1].glob("0*.py"))
 CHAPTER_2_EXAMPLES   = sorted(CHAPTER_DIRS[2].glob("example_*.py"))
 CHAPTER_2_ANIMATIONS = sorted(CHAPTER_DIRS[2].glob("animation_*.py"))
 CHAPTER_3_EXAMPLES   = sorted(CHAPTER_DIRS[3].glob("example_*.py"))
-CHAPTER_3_ANIMATIONS = sorted(CHAPTER_DIRS[3].glob("animation_*.py"))
+# … later chapters follow the same pattern …
+CHAPTER_4_EXAMPLES   = sorted(CHAPTER_DIRS[4].glob("example_*.py"))
+CHAPTER_4_ANIMATIONS = sorted(CHAPTER_DIRS[4].glob("animation_*.py"))
+CHAPTER_5_EXAMPLES   = sorted(CHAPTER_DIRS[5].glob("example_*.py"))
+CHAPTER_5_ANIMATIONS = sorted(CHAPTER_DIRS[5].glob("animation_*.py"))
 ```
 
 A new chapter script is therefore picked up automatically. The price is
@@ -28,7 +33,8 @@ that the glob patterns are an implicit contract — name files
 
 ## Conventions
 
-- All scripts run with `MPLBACKEND=Agg` so no display is required.
+- All scripts run with `MPLBACKEND=Agg` and `PYTHONWARNINGS=error` so no display
+  is required and warning regressions fail the smoke run.
 - `interactive_*.py` scripts are filtered out of the smoke run via
   `_is_interactive`.
 - Each script runs in its own subprocess — failures in one do not affect

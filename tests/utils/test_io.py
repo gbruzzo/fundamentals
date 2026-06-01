@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
-import pytest
 
 from active_inference.utils.io import (
     default_data_dir,

@@ -105,7 +105,7 @@ class Pipeline:
 
 @dataclass
 class RunningPosteriorStats:
-    """Per-step traces produced by :func:`running_stats`."""
+    """Store per-observation posterior moments, KL shifts, evidence, and densities."""
 
     n_axis: np.ndarray            # shape (N,) — 1, 2, ..., N
     means: np.ndarray             # shape (N,)

@@ -13,6 +13,14 @@ the rest of the package builds on this layer.
 | [`generative_model.py`](generative_model.py) | `GenerativeModel` (abstract), `LinearGaussianModel` (univariate), `LinearGaussianMVModel` (multivariate). |
 | [`inference.py`](inference.py) | `GridBayesianInference` + `InferenceResult` — exact posterior on a 1-D grid with trapezoid normalization. |
 | [`lgs.py`](lgs.py) | `LinearGaussianSystem` + `LGSPosterior` — closed-form multivariate posterior. |
+| [`variational.py`](variational.py) | **(Ch.4)** `GaussianBelief`, `variational_free_energy` → `VFEComponents` (the five VFE forms), `vfe_g_form`/`vfe_d_form`/`vfe_c_form`/`vfe_e_form`/`vfe_map_form`/`vfe_mle_form`, `log_model_evidence`, `surprisal`, `free_energy_bound_gap`. |
+| [`predictive_coding.py`](predictive_coding.py) | **(Ch.5)** `PredictiveCodingModel`, `GenerativeFunction`/`LinearFunction`/`QuadraticFunction`/`GenericFunction`, `PCFreeEnergy`, `predictive_coding_free_energy`, `pc_free_energy_grad`(`_fd`), `pc_linear_fixed_point`, `pc_curvature_linear`, `sensory_prediction_error`, `state_prediction_error`. |
+| [`continuous_learning.py`](continuous_learning.py) | **(Ch.8)** `LearningAttentionModel`, `LearningAttentionState`, `learning_attention_free_energy`, `learning_attention_grad`(`_fd`), log-precision transforms, `HierarchicalContinuousModel`, and message-passing terms. |
+| [`diagnostics.py`](diagnostics.py) | Statistical diagnostics — calibration/coverage/CRPS/log-score, entropies & KLs, `posterior_predictive_check`, and the Ch.5 validation helpers `gradient_check`, `convergence_report`, `oracle_agreement`. |
+| [`compose.py`](compose.py) | `Pipeline` (process + model wiring), `running_stats` / `RunningPosteriorStats`. |
+| [`posterior.py`](posterior.py) | `Posterior` protocol + `summarize_posterior` and accessors that dispatch across grid / LGS / BLR posteriors. |
+| [`validators.py`](validators.py) | `require_*` defensive runtime checks (shapes, finiteness, ranges). |
+| [`types.py`](types.py) | Shape aliases + `assert_cov` / `assert_probabilities`. |
 | `__init__.py` | Re-exports the public surface. |
 
 ## Public API
@@ -31,7 +39,33 @@ from active_inference.core.generative_model import (
 )
 from active_inference.core.inference import GridBayesianInference, InferenceResult
 from active_inference.core.lgs import LinearGaussianSystem, LGSPosterior
+from active_inference.core.variational import (        # Chapter 4
+    GaussianBelief, variational_free_energy, VFEComponents,
+    log_model_evidence, surprisal,
+)
+from active_inference.core.predictive_coding import (  # Chapter 5
+    PredictiveCodingModel, LinearFunction, QuadraticFunction,
+    predictive_coding_free_energy, pc_free_energy_grad, pc_linear_fixed_point,
+)
+from active_inference.core.generalized_filtering import (  # Chapter 6
+    GeneralizedVectorModel, correlated_embedding_precision,
+    generalized_vector_free_energy_grad,
+)
+from active_inference.core.active_inference import (  # Chapter 7
+    MultivariateActiveInferenceAgent, multivariate_action_gradient,
+)
+from active_inference.core.continuous_learning import (  # Chapter 8
+    LearningAttentionModel, LearningAttentionState,
+    learning_attention_free_energy, learning_attention_grad,
+)
+from active_inference.core.diagnostics import (
+    gradient_check, convergence_report, oracle_agreement,
+)
 ```
+
+(The `core.distributions`, `compose`, `posterior`, `validators`, and `types`
+helpers are also re-exported at the package top level — see
+[`docs/reference/core.md`](../../../docs/reference/core.md) for the full catalogue.)
 
 ## Design Decisions
 
@@ -55,6 +89,9 @@ from active_inference.core.lgs import LinearGaussianSystem, LGSPosterior
 
 ## Testing
 
-See `tests/core/test_distributions.py`, `test_distributions_mvn.py`,
-`test_generative_process.py`, `test_generative_model.py`,
-`test_inference.py`, and `test_lgs.py`.
+One test file per module under `tests/core/`: `test_distributions.py`,
+`test_distributions_mvn.py`, `test_generative_process.py`,
+`test_generative_model.py`, `test_inference.py`, `test_lgs.py`,
+`test_variational.py`, `test_predictive_coding.py`, `test_diagnostics.py`,
+`test_continuous_learning.py`, `test_compose.py`, `test_posterior.py`,
+`test_validators.py`, `test_types.py`.

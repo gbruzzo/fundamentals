@@ -8,12 +8,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def default_figure_dir() -> Path:
-    """Project-wide directory for generated figures."""
+    """Return the repository-level directory where chapter figures are rendered."""
     return _REPO_ROOT / "output" / "figures"
 
 
 def default_data_dir() -> Path:
-    """Project-wide directory for serialized numerical results."""
+    """Return the repository-level directory where raw NPZ/JSON data is exported."""
     return _REPO_ROOT / "output" / "data"
 
 

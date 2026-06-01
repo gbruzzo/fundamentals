@@ -83,6 +83,16 @@ class TestGeneratingFunction:
         )
         assert out.exists()
 
+    def test_single_sample_has_no_degrees_of_freedom_warning(self) -> None:
+        x = np.linspace(0, 5, 50)
+        y = 2 * x + 3
+        fig = plot_generating_function(
+            x, y,
+            samples_x=np.array([1.0]),
+            samples_y=np.array([5.0]),
+        )
+        assert "n/a (N < 2)" in fig.axes[0].texts[0].get_text()
+
 
 class TestRidgePlot:
     def test_multiple_likelihoods(self, tmp_path: Path) -> None:

@@ -15,7 +15,7 @@ the simpler scalar / array / shape checks the type aliases don't reach.
 
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -66,7 +66,7 @@ def require_in_unit_interval(
 
 def require_int_at_least(x: int, *, minimum: int = 1,
                           name: str = "value") -> int:
-    """Assert ``x >= minimum`` and integer-typed."""
+    """Return ``x`` as an int after enforcing integer type and lower bound."""
     if not isinstance(x, (int, np.integer)):
         raise ValueError(f"{name} must be an integer, got {type(x).__name__}")
     x = int(x)

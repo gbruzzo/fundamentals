@@ -9,10 +9,10 @@ docs.
 
 | File | Mirrors | Public symbols |
 |---|---|---|
-| [`core.md`](core.md) | `src/active_inference/core/` | distributions (univariate + multivariate), generative process / model, exact inference, LGS, **diagnostics**. |
-| [`estimators.md`](estimators.md) | `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, Bayesian linear regression, factor-analysis EM. |
-| [`utils.md`](utils.md) | `src/active_inference/utils/` | grids, paths, logger factory. |
-| [`visualizations.md`](visualizations.md) | `src/active_inference/visualizations/` | plotting helpers, slider widgets, GIF animations, statistical-diagnostic figures. |
+| [`core.md`](core.md) | `src/active_inference/core/` | distributions, generative process / model, exact inference, LGS, diagnostics, variational free energy (Ch.4), predictive coding (Ch.5), generalized filtering / action (Ch.6–7), continuous learning / hierarchy (Ch.8), and POMDPs (Ch.9–10). |
+| [`estimators.md`](estimators.md) | `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, Bayesian linear regression, factor-analysis EM, variational inference (Ch.4), predictive coding (Ch.5), generalized filtering / action (Ch.6–7), continuous learning (Ch.8), and POMDP estimators (Ch.9–10). |
+| [`utils.md`](utils.md) | `src/active_inference/utils/` | grids, paths, logger factory, and NPZ+JSON raw-data exports. |
+| [`visualizations.md`](visualizations.md) | `src/active_inference/visualizations/` | plotting helpers, slider widgets, GIF animations, statistical-diagnostic figures, the composable Ch.4–10 `unified` layer, and colourblind-safe style. |
 
 ## How each page is structured
 

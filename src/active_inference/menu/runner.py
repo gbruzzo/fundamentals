@@ -55,6 +55,7 @@ _CHAPTER_PATTERN = re.compile(r"^chapter_(\d+)$")
 
 
 def _refresh_chapter_dirs() -> None:
+    """Refresh chapter discovery caches after filesystem changes."""
     CHAPTER_DIRS.clear()
     if not CHAPTERS_ROOT.is_dir():
         return
@@ -80,10 +81,12 @@ class ScriptEntry:
 
     @property
     def name(self) -> str:
+        """Return display metadata derived from this repository path."""
         return self.path.name
 
     @property
     def relative(self) -> str:
+        """Return display metadata derived from this repository path."""
         try:
             return str(self.path.relative_to(REPO_ROOT))
         except ValueError:
@@ -100,10 +103,12 @@ class ChapterEntry:
 
     @property
     def title(self) -> str:
+        """Return display metadata derived from this repository path."""
         return f"Chapter {self.number:02d}"
 
     @property
     def relative(self) -> str:
+        """Return display metadata derived from this repository path."""
         try:
             return str(self.path.relative_to(REPO_ROOT))
         except ValueError:
@@ -111,6 +116,7 @@ class ChapterEntry:
 
 
 def _classify(script: Path) -> str:
+    """Classify a chapter script by filename convention."""
     name = script.name
     if name.startswith("animation_"):
         return "animation"
@@ -191,6 +197,7 @@ def discover_scripts(
 
 
 def _build_env(extra_path: Iterable[Path] | None = None) -> dict[str, str]:
+    """Build the subprocess environment for headless chapter execution."""
     env = os.environ.copy()
     env["MPLBACKEND"] = "Agg"
     src_dir = REPO_ROOT / "src"

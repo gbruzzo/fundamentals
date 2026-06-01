@@ -14,6 +14,9 @@ would clutter a single chapter page.
 | [`multivariate_gaussians.md`](multivariate_gaussians.md) | Cholesky-based density / sampling, Mahalanobis distance, confidence ellipses. |
 | [`gradient_descent.md`](gradient_descent.md) | Vanilla GD, learning-rate stability bound, finite-difference fallback, regularization. |
 | [`inverse_problem.md`](inverse_problem.md) | Why naive inversion fails, how priors / hierarchies / noise restore identifiability. |
+| [`active_inference.md`](active_inference.md) | The active-inference frame: perception, action, and expected free energy in context. |
+| [`free_energy_principle.md`](free_energy_principle.md) | The Free Energy Principle and how variational free energy operationalizes it. |
+| [`bayesian_mechanics.md`](bayesian_mechanics.md) | Bayesian mechanics — the triangle linking Bayesian inference, the FEP, and active inference. |
 
 ## How to read these pages
 

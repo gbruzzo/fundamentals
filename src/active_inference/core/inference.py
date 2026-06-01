@@ -13,7 +13,7 @@ from typing import Optional
 
 import numpy as np
 
-from .diagnostics import grid_entropy, grid_kl_divergence, logsumexp
+from .diagnostics import grid_entropy, grid_kl_divergence
 from .distributions import normalize_density
 from .generative_model import GenerativeModel
 

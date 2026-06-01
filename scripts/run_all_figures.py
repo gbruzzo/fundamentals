@@ -1,20 +1,20 @@
-"""Render every figure for Chapters 1 and 2.
+"""Render every figure for Chapters 1–10.
 
 Run::
 
-    python scripts/run_all_figures.py [--chapters 1 2] [--clean]
+    python scripts/run_all_figures.py [--chapters 1 2 3 4 5] [--clean]
 
 This is a convenience wrapper around the per-chapter orchestrators. It sets
 ``MPLBACKEND=Agg`` so it can be used in CI or on headless servers, then runs
 every chapter script with ``--save``. Figures land in
-``output/figures/chapter_<N>/``.
+``output/figures/chapter_<N>/`` and raw data lands in
+``output/data/chapter_<N>/``.
 """
 
 from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -24,16 +24,28 @@ CHAPTER_DIRS = {
     1: REPO_ROOT / "chapters" / "chapter_01",
     2: REPO_ROOT / "chapters" / "chapter_02",
     3: REPO_ROOT / "chapters" / "chapter_03",
+    4: REPO_ROOT / "chapters" / "chapter_04",
+    5: REPO_ROOT / "chapters" / "chapter_05",
+    6: REPO_ROOT / "chapters" / "chapter_06",
+    7: REPO_ROOT / "chapters" / "chapter_07",
+    8: REPO_ROOT / "chapters" / "chapter_08",
+    9: REPO_ROOT / "chapters" / "chapter_09",
+    10: REPO_ROOT / "chapters" / "chapter_10",
 }
 OUTPUT_DIR = REPO_ROOT / "output" / "figures"
+DATA_DIR = REPO_ROOT / "output" / "data"
+GENERATED_SUFFIXES = {".gif", ".mp4", ".pdf", ".png", ".svg", ".webm"}
+GENERATED_DATA_SUFFIXES = {".csv", ".json", ".npz"}
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--chapters", nargs="+", type=int, default=[1, 2, 3],
-                   choices=[1, 2, 3])
+    p.add_argument("--chapters", nargs="+", type=int,
+                   default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                   choices=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     p.add_argument("--clean", action="store_true",
-                   help="Delete existing output/figures before running")
+                   help="Delete existing generated figure media and raw data before running")
     p.add_argument("--keep-going", action="store_true",
                    help="Continue on script failure")
     p.add_argument("--no-animations", action="store_true",
@@ -41,7 +53,39 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
+def clean_output_dir(root: Path = OUTPUT_DIR) -> int:
+    """Remove generated media while preserving hand-maintained docs.
+
+    The output tree contains README files that explain generated artifacts.
+    A clean render should replace stale figures, not erase that documentation.
+    """
+
+    if not root.exists():
+        return 0
+
+    removed = 0
+    for path in root.rglob("*"):
+        if path.is_file() and path.suffix.lower() in GENERATED_SUFFIXES:
+            path.unlink()
+            removed += 1
+    return removed
+
+
+def clean_data_dir(root: Path = DATA_DIR) -> int:
+    """Remove generated raw-data sidecars while preserving README/AGENTS docs."""
+    if not root.exists():
+        return 0
+
+    removed = 0
+    for path in root.rglob("*"):
+        if path.is_file() and path.suffix.lower() in GENERATED_DATA_SUFFIXES:
+            path.unlink()
+            removed += 1
+    return removed
+
+
 def chapter_scripts(ch: int, *, include_animations: bool = True) -> list[Path]:
+    """Support this repository command-line validation or rendering script."""
     if ch not in CHAPTER_DIRS:
         raise ValueError(ch)
     base = CHAPTER_DIRS[ch]
@@ -55,8 +99,10 @@ def chapter_scripts(ch: int, *, include_animations: bool = True) -> list[Path]:
 
 
 def run(script: Path) -> int:
+    """Support this repository command-line validation or rendering script."""
     env = os.environ.copy()
     env["MPLBACKEND"] = "Agg"
+    env["PYTHONWARNINGS"] = "error"
     env["PYTHONPATH"] = str(REPO_ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
     cmd = [sys.executable, str(script), "--save"]
     print(f"  ▶ {script.relative_to(REPO_ROOT)}")
@@ -65,10 +111,14 @@ def run(script: Path) -> int:
 
 
 def main() -> int:
+    """Run this repository command-line tool and return its exit status."""
     args = parse_args()
     if args.clean and OUTPUT_DIR.exists():
-        shutil.rmtree(OUTPUT_DIR)
-        print(f"Cleaned {OUTPUT_DIR}")
+        removed = clean_output_dir(OUTPUT_DIR)
+        print(f"Cleaned {removed} generated artifacts from {OUTPUT_DIR}")
+    if args.clean and DATA_DIR.exists():
+        removed = clean_data_dir(DATA_DIR)
+        print(f"Cleaned {removed} generated data files from {DATA_DIR}")
 
     failed: list[Path] = []
     for ch in args.chapters:

@@ -9,14 +9,15 @@ in `chapters/`.
 | File | Purpose |
 |---|---|
 | `run_all_figures.py` | Render every chapter script that accepts `--save` to `output/figures/`. Supports `--chapters`, `--clean`, `--keep-going`, `--no-animations`. |
+| `validate_rendered_figures.py` | Validate generated PNG/GIF artifacts for corruption, blank output, tiny dimensions, and trivial GIFs. |
 | `run_all_chapter_01.sh` | Bash wrapper invoking `run_all_figures.py --chapters 1`. |
 | `run_all_chapter_02.sh` | Same for Chapter 2. |
 | `run_all_chapter_03.sh` | Same for Chapter 3. |
 
 ## Conventions
 
-- Every script must run with `MPLBACKEND=Agg` so it works in CI / headless
-  containers.
+- Every render script must run with `MPLBACKEND=Agg` and `PYTHONWARNINGS=error`
+  so it works in CI / headless containers and fails on warning regressions.
 - Bash wrappers are 3 lines: `cd` to repo root, then exec the Python
   driver with `--chapters <N> "$@"` so callers can pass extra flags
   through (e.g., `--clean`, `--no-animations`).

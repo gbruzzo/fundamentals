@@ -8,30 +8,32 @@ figure, optionally save it.
 
 | File | What it defines |
 |---|---|
-| [`plotting.py`](plotting.py) | Static figure helpers (6 plot functions + `save_or_show`) |
-| [`interactive.py`](interactive.py) | Matplotlib slider widgets (2 interactive functions) |
-| `__init__.py` | Re-exports all public names |
+| [`style.py`](style.py) | The shared visual vocabulary: `COLORS` (Okabe-Ito colourblind-safe palette), `DEFAULT_RC` (bold, slide-sized typography applied at import), `annotate_stat_box`, `annotate_point`, `figure_style`. |
+| [`plotting.py`](plotting.py) | Static figure helpers for Chapters 1–3 (prior/likelihood/posterior, generating function, gradient descent, 2-D Gaussians, …) + `save_or_show`. |
+| [`variational.py`](variational.py) | Chapter 4 figures — VFE surface/contour, density evolution, the five-form decomposition, surprisal relationship. |
+| [`unified.py`](unified.py) | The composable Chapter 4–10 layer: recognition dynamics, generalized filtering, Ch.6 correlated/vector generalized-coordinate plots, Ch.7 multivariate active-inference plots, Chapter 8 learning/attention and message passing, dynamic discrete beliefs, policy EFE decomposition, parameter learning, bandit, factorial, and hierarchical plotters, plus the `panel_grid`/`finalize`/`layer_colors` primitives. |
+| [`diagnostics.py`](diagnostics.py) | Calibration / coverage / posterior-predictive diagnostic plots. |
+| [`animations.py`](animations.py) | `FuncAnimation` builders (pillow GIF), including composable recognition, hierarchical PC, Ch.7 multivariate active inference, Chapter 8 learning/attention, dynamic discrete belief, policy EFE trade-off, parameter-learning, precision, and bandit animations plus `save_animation`. |
+| [`interactive.py`](interactive.py) | Matplotlib slider widgets (no ipywidgets). |
+| `__init__.py` | Re-exports all public names. |
 
 ## Public API
 
-### Static Plots (`plotting.py`)
+The authoritative, always-current API listing lives in
+[`docs/reference/visualizations.md`](../../../docs/reference/visualizations.md)
+(every function, its signature, and what it produces). It is kept in sync with
+`__all__`; consult it rather than duplicating signatures here. A few cross-cutting
+conventions:
 
-| Function | Signature | Produces |
-|---|---|---|
-| `plot_prior_likelihood_posterior(result, *, title, truth, save_path, show)` | `InferenceResult` → 3-panel axes | Prior / likelihood / posterior densities |
-| `plot_generating_function(x_grid, f_x, *, samples_x, samples_y, title, save_path, show)` | Grid + function values → axes | `y = g(x)` with optional sample scatter |
-| `plot_likelihood_ridge(x_grid, likelihoods, *, labels, title, save_path, show)` | Grid + list of densities → axes | Stacked ridge plot of per-sample likelihoods |
-| `plot_joint_heatmap(x_grid, y_grid, joint, *, title, save_path, show)` | 2-D grid + joint density → axes | Heatmap of `p(x, y)` |
-| `plot_gradient_descent(history, losses, *, truth, title, save_path, show)` | Iterate + loss arrays → axes | Loss curve and iterate trajectory side-by-side |
-| `plot_precision_comparison(results, *, title, save_path, show)` | List of `(label, InferenceResult)` → axes | Overlay of multiple posteriors for precision studies |
-| `save_or_show(fig, save_path, *, show, dpi)` | Figure → file or screen | Utility: save to disk or display |
-
-All plotting functions accept:
-- An optional `ax` parameter is **not** used (each creates its own figure/axes)
-  because the chapter orchestrators manage multi-panel layouts themselves.
-- An optional `save_path` (path or string). If provided, the figure is saved
-  and not shown (unless `show=True`).
-- An optional `show=False` to display interactively.
+- **`ax` is supported where it composes.** Several helpers (e.g.
+  `plot_2d_gaussian`) accept an optional `ax: Optional[plt.Axes]` and draw into it;
+  the `unified` plotters return a multi-panel `Figure`. Functions that own their
+  whole figure simply create one.
+- **`save_or_show(fig, save_path, *, show, dpi)` is the single I/O gateway** — pass
+  a `save_path` to write a PNG, omit it to display.
+- **Style is centralized.** Colours come from `style.COLORS` (colourblind-safe);
+  fonts/line-widths from `DEFAULT_RC`. Nothing hard-codes hex or `figsize` in the
+  composable layer, so the whole package re-skins from one place.
 
 ### Interactive Widgets (`interactive.py`)
 
@@ -48,7 +50,12 @@ environment with a display and matplotlib installed.
 - **No global state.** Each function creates and returns a new figure.
 - **`save_or_show` is the single I/O gateway.** Every plot function delegates
   to it, so switching between save and display is always one argument.
+- **Composable by result object.** The `unified` plotters and animators accept
+  reusable traces or result objects, so chapter scripts stay thin and the shared
+  visual grammar is tested once.
 - Return the `Figure` object so callers can compose or further customize.
+- **Accessibility first.** Colourblind-safe palette, bold large fonts, a legend on
+  every panel, and statistics/analytical annotations baked into the shared layer.
 
 ## Dependencies
 

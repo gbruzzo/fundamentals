@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 
-import numpy as np
 
 from active_inference import (
     GridBayesianInference,
@@ -27,6 +26,7 @@ LOG = get_logger("ch2.ex3")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--y-obs", type=float, default=7.0)
@@ -43,6 +43,7 @@ def configurations() -> list[tuple[str, float, float]]:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     x_grid = make_grid(0.0, 5.0, 500)
 

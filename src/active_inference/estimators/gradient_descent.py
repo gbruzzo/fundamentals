@@ -7,7 +7,7 @@ a numerical finite-difference fallback (works for arbitrary loss callables).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import numpy as np
@@ -44,6 +44,7 @@ def _numerical_gradient(
     x: float,
     h: float = 1e-5,
 ) -> float:
+    """Estimate a gradient by central finite differences."""
     return (loss_fn(x + h) - loss_fn(x - h)) / (2.0 * h)
 
 

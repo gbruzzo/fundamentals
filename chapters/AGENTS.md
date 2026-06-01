@@ -35,7 +35,8 @@ numerical example.
 3. Add the chapter's directory to `CHAPTER_DIRS` in
    `scripts/run_all_figures.py`.
 4. Add a one-line entry to `README.md` and `docs/architecture.md` and a
-   concept map to `docs/chapter_<N>_overview.md`.
+   concept map to `docs/chapters/chapter_<N>.md` (also list it in
+   `docs/chapters/README.md`).
 
 ## Running
 

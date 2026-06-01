@@ -12,6 +12,13 @@ own file.
 | `core/generative_model.py` | [`test_generative_model.py`](test_generative_model.py) |
 | `core/inference.py` | [`test_inference.py`](test_inference.py) |
 | `core/lgs.py` | [`test_lgs.py`](test_lgs.py) |
+| `core/variational.py` (Ch.4) | [`test_variational.py`](test_variational.py) |
+| `core/predictive_coding.py` (Ch.5) | [`test_predictive_coding.py`](test_predictive_coding.py) |
+| `core/diagnostics.py` | [`test_diagnostics.py`](test_diagnostics.py) |
+| `core/compose.py` | [`test_compose.py`](test_compose.py) |
+| `core/posterior.py` | [`test_posterior.py`](test_posterior.py) |
+| `core/validators.py` | [`test_validators.py`](test_validators.py) |
+| `core/types.py` | [`test_types.py`](test_types.py) |
 
 ## Running
 
@@ -31,3 +38,10 @@ pytest tests/core/test_lgs.py -v
 - Generative models validate input shapes and raise on bad inputs.
 - `GridBayesianInference` posterior matches sequential Bayesian updating.
 - `LinearGaussianSystem.posterior_batch` recovers the truth as N grows.
+- Variational free energy's five forms agree and the bound `𝓕 ≥ −log p(y)`
+  holds, tight at the posterior (Ch.4).
+- Predictive coding's analytic gradient matches finite differences and its
+  linear fixed point equals the grid posterior mean (Ch.5).
+- Diagnostics (calibration, CRPS, KL/entropy, `gradient_check`,
+  `convergence_report`, `oracle_agreement`), compose pipelines, the posterior
+  protocol, validators, and type asserts.

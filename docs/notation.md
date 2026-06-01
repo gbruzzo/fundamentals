@@ -14,6 +14,10 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | `Y`        | `Y`               | Stacked observations as an `(N, D)` data matrix. |
 | `X`        | `X`               | Design matrix `(N, C)` (or `(N, C+1)` with intercept). |
 | `Θ` / `θ`  | `Theta` / `theta` | Mixing matrix (LGS / FA) or parameter vector (regression). |
+| `ζ`        | `mu_zeta`         | Log precision for Chapter 8 attention / second-order parameter learning. |
+| `μ̃_x`      | `mu_tilde`, `mus` | Generalized-coordinate hidden-state belief; public result tensors use `(time, embedding_order, variable)`. |
+| `ỹ`        | `y_tilde`, `y_tildes` | Generalized measurements built from observations and their finite-difference derivatives. |
+| `a`        | `action`, `actions` | Continuous action/control signal in Chapter 7 active generalized filtering. |
 | `b`        | `b`               | Optional offset added to the linear generator. |
 | `g_E`      | `process.mean()`  | Generating function inside the environment. |
 | `g_M`      | `model.predict_mean()` | Agent's generating function. |
@@ -31,6 +35,10 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | `s2_x`     | `s2_x`                 | Prior variance over the hidden state. |
 | `theta*`   | `process.theta`        | Parameters of the generative process. |
 | `theta`    | model attributes       | Parameters of the generative model. |
+| `λ` / `Π`  | `lambda_*`, `precision_*` | Precision (inverse variance/covariance); Chapter 8 uses `exp(mu_zeta)`. |
+| `Π̃(γ)`    | `correlated_embedding_precision(...)` | Generalized precision with correlated embedding orders. |
+| `S(γ)`     | `gaussian_temporal_covariance(...)` | Gaussian temporal covariance over embedding orders. |
+| `γ`        | `gamma`                 | Smoothness/roughness parameter controlling embedding-order correlations. |
 
 ## Densities
 
@@ -39,7 +47,7 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | `p(y \| x)`       | `model.log_likelihood(...)`    | Likelihood / observation model. |
 | `p(x)`            | `model.log_prior(...)`         | Hidden-state prior. |
 | `p(x, y)`         | `inferer.joint_density(...)`   | Joint distribution. |
-| `p(y)`            | `result.log_evidence`          | Marginal likelihood (model evidence). |
+| `log p(y)`        | `result.log_evidence`          | Log marginal likelihood (model evidence); `surprisal = −log p(y)`. |
 | `p(x \| y)`       | `result.posterior`             | Posterior on the grid. |
 
 ## Algorithms
@@ -56,6 +64,11 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | MVN     | `mvn_pdf`, `mvn_log_pdf`, `mvn_sample`, `mahalanobis_squared` | `core/distributions.py` |
 | Pipeline | `Pipeline`, `Pipeline.linear_gaussian`             | `core/compose.py` |
 | Running stats | `running_stats`, `RunningPosteriorStats`       | `core/compose.py` |
+| VFE (Ch.4) | `variational_free_energy`, `coordinate_search_vfe`, `fixed_form_vi`, `free_form_cavi` | `core/variational.py`, `estimators/variational.py` |
+| PC (Ch.5) | `predictive_coding_inference`, `multivariate_predictive_coding`, `hierarchical_predictive_coding`, `pc_free_energy_grad`, `pc_linear_fixed_point` | `core/predictive_coding.py`, `estimators/predictive_coding.py` |
+| GF (Ch.6) | `generalized_filter`, `generalized_filter_gc`, `generalized_vector_filter`, `correlated_embedding_precision` | `core/generalized_filtering.py`, `estimators/generalized_filtering.py` |
+| AIF (Ch.7) | `simulate_active_inference`, `simulate_multivariate_active_inference`, `multivariate_action_gradient` | `core/active_inference.py`, `estimators/active_inference.py` |
+| AGF learning/attention (Ch.8) | `learning_attention_free_energy`, `simulate_learning_attention`, `hierarchical_message_terms` | `core/continuous_learning.py`, `estimators/continuous_learning.py` |
 
 ## Information-theoretic / FEP quantities
 

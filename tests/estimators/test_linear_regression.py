@@ -71,8 +71,10 @@ class TestGradientDescent:
         numeric = np.empty_like(theta)
         eps = 1e-5
         for i in range(theta.size):
-            t_plus = theta.copy(); t_plus[i] += eps
-            t_minus = theta.copy(); t_minus[i] -= eps
+            t_plus = theta.copy()
+            t_plus[i] += eps
+            t_minus = theta.copy()
+            t_minus[i] -= eps
             numeric[i] = (squared_loss(t_plus, X, y)
                           - squared_loss(t_minus, X, y)) / (2 * eps)
         np.testing.assert_allclose(analytic, numeric, atol=1e-4)

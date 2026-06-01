@@ -14,7 +14,6 @@ the world from it."
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -27,6 +26,7 @@ LOG = get_logger("ch1.box")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true", help="save figures instead of showing")
     p.add_argument("--seed", type=int, default=0)
@@ -38,6 +38,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     rng = np.random.default_rng(args.seed)
 

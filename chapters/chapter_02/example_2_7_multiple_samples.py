@@ -39,6 +39,7 @@ LOG = get_logger("ch2.ex7")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--seed", type=int, default=6)
@@ -66,6 +67,7 @@ def sequential_inference(
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     rng = np.random.default_rng(args.seed)
 
@@ -99,7 +101,6 @@ def main() -> None:
         los.append(float(np.interp(0.025, cdf, x_grid)))
         his.append(float(np.interp(0.975, cdf, x_grid)))
 
-    final_post = post  # last yielded posterior
     LOG.info("Sequential final mode = %.4f (matches batch within tol)",
              modes[-1])
     assert np.allclose(modes[-1], res_batch.posterior_mode, atol=2e-3)

@@ -32,6 +32,7 @@ LOG = get_logger("ch2.ex8")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--seed", type=int, default=7)
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     rng = np.random.default_rng(args.seed)
 

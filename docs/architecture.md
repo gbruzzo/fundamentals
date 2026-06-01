@@ -22,25 +22,29 @@ class so chapter scripts can mix and match them.
                        ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ src/active_inference/visualizations/                         │  static + interactive
-│   plotting.py, interactive.py, animations.py,                │  matplotlib helpers,
-│   diagnostics.py, style.py                                   │  GIF / slider widgets,
-│                                                              │  diagnostic figures
+│   plotting.py, variational.py, unified.py,                   │  matplotlib helpers,
+│   interactive.py, animations.py, diagnostics.py,             │  GIF / slider widgets,
+│   style.py                                                   │  diagnostic figures
 └──────────────────────┬───────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ src/active_inference/estimators/                             │  point estimates
-│   mle.py, map.py, gradient_descent.py,                       │  (analytic + iterative)
-│   linear_regression.py, em.py                                │
+│ src/active_inference/estimators/                             │  point estimates +
+│   mle.py, map.py, gradient_descent.py,                       │  variational / PC
+│   linear_regression.py, em.py, variational.py,               │  (analytic + iterative)
+│   predictive_coding.py, continuous_learning.py,              │
+│   generalized_filtering.py, active_inference.py, pomdp.py    │
 └──────────────────────┬───────────────────────────────────────┘
                        │
                        ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ src/active_inference/core/                                   │  exact Bayesian
 │   distributions.py, generative_process.py,                   │  inference + diagnostics
-│   generative_model.py, inference.py, lgs.py,                 │
+│   generative_model.py, inference.py, lgs.py,                 │  + VFE / predictive coding
 │   compose.py, diagnostics.py, posterior.py,                  │
-│   types.py, validators.py                                    │
+│   types.py, validators.py, variational.py,                   │
+│   predictive_coding.py, continuous_learning.py,              │
+│   generalized_filtering.py, active_inference.py, pomdp.py    │
 └──────────────────────┬───────────────────────────────────────┘
                        │
                        ▼
@@ -77,6 +81,12 @@ the inference engine without touching the chapter scripts.
 | `BLRPosterior` / `GDRegressionResult` | same                   | Posterior over θ; iterate / loss history. |
 | `FactorAnalysisResult`       | `estimators/em.py`              | Final loadings, posteriors, log-likelihood trace. |
 | `GradientDescentResult`      | `estimators/gradient_descent.py`| Iterate / loss history of a 1-D descent run. |
+| `LearningAttentionModel`     | `core/continuous_learning.py`   | Chapter 8 hidden-state, parameter, and log-precision free-energy model. |
+| `LearningAttentionResult`    | `estimators/continuous_learning.py` | Perception, learning, attention, and VFE traces for Chapter 8. |
+| `HierarchicalContinuousModel`| `core/continuous_learning.py`   | Two-layer continuous hierarchy with top-down context and message terms. |
+| `GeneralizedVectorModel`     | `core/generalized_filtering.py` | Chapter 6 vector generalized-coordinate model with correlated embedding-order precision. |
+| `MultivariateActiveInferenceAgent` | `core/active_inference.py` | Chapter 7 vector action-perception agent in generalized coordinates. |
+| `MultivariateActiveInferenceResult` | `estimators/active_inference.py` | Vector state, belief, action, generalized measurement, error, and VFE traces. |
 | `ChapterEntry` / `ScriptEntry` | `menu/runner.py`              | Discovered chapter folder + runnable script descriptor. |
 
 See [`reference/`](reference/) for a full per-subpackage API catalogue.
@@ -112,7 +122,9 @@ See [`reference/`](reference/) for a full per-subpackage API catalogue.
    (with tests in `tests/<sub>/`).
 2. Drop a thin orchestrator into `chapters/chapter_<N>/` that imports your
    new helper. The script should be ≤ ~120 lines.
-3. Document it in `chapters/chapter_<N>/README.md`. The
+3. Document it in the chapter's concept map
+   [`docs/chapters/chapter_<N>.md`](chapters/) and the in-tree
+   `chapters/chapter_<N>/README.md`. The
    [`run.sh`](../run.sh) menu and `tests/chapters/test_smoke.py` will pick
    it up automatically as long as it follows the
    `example_*.py` / `animation_*.py` / `visualize_*.py` naming convention

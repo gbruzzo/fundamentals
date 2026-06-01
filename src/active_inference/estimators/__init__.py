@@ -11,6 +11,19 @@ from .em import (
     fit_factor_analysis,
     incomplete_log_likelihood,
 )
+from .continuous_learning import (
+    LearningAttentionResult,
+    simulate_learning_attention,
+)
+from .generalized_filtering import (
+    GeneralizedVectorFilterResult,
+    generalized_measurements_from_series,
+    generalized_vector_filter,
+)
+from .active_inference import (
+    MultivariateActiveInferenceResult,
+    simulate_multivariate_active_inference,
+)
 from .gradient_descent import gradient_descent, GradientDescentResult
 from .linear_regression import (
     BLRPosterior,
@@ -47,4 +60,11 @@ __all__ = [
     "factor_analysis_m_step",
     "incomplete_log_likelihood",
     "FactorAnalysisResult",
+    "LearningAttentionResult",
+    "simulate_learning_attention",
+    "generalized_measurements_from_series",
+    "generalized_vector_filter",
+    "GeneralizedVectorFilterResult",
+    "simulate_multivariate_active_inference",
+    "MultivariateActiveInferenceResult",
 ]

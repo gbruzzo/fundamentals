@@ -33,6 +33,7 @@ LOG = get_logger("ch3.bimodal_anim")
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line options for this executable entry point."""
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--save", action="store_true")
     p.add_argument("--y-obs", type=float, default=11.0)
@@ -41,6 +42,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the chapter orchestrator and render or display its outputs."""
     args = parse_args()
     x_grid = make_grid(-3.0, 3.0, 500)
     prior_means = np.linspace(-2.5, 2.5, args.n_frames)

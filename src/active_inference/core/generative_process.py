@@ -88,6 +88,7 @@ class LinearGaussianProcess(GenerativeProcess):
         self._nonlinear = nonlinear
 
         def g(x_star, beta0=self.beta0, beta1=self.beta1, nonlinear=self._nonlinear):
+            """Evaluate the generative prediction for the supplied state."""
             x_star = np.asarray(x_star, dtype=float)
             psi = nonlinear(x_star) if nonlinear is not None else x_star
             return beta0 + beta1 * psi

@@ -14,7 +14,7 @@ analysis).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import numpy as np
@@ -22,7 +22,6 @@ import numpy as np
 from .distributions import (
     dirac_like_pdf,
     gaussian_log_pdf,
-    gaussian_pdf,
     mvn_log_pdf,
     uniform_pdf,
 )

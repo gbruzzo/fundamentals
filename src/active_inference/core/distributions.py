@@ -45,7 +45,7 @@ def gaussian_pdf(x: ArrayLike, mu: ArrayLike, sigma2: ArrayLike) -> np.ndarray:
 
 
 def gaussian_log_pdf(x: ArrayLike, mu: ArrayLike, sigma2: ArrayLike) -> np.ndarray:
-    """Log of :func:`gaussian_pdf`, computed without exponentiating first."""
+    """Return univariate Gaussian log density with positive-variance validation."""
     x = np.asarray(x, dtype=float)
     mu = np.asarray(mu, dtype=float)
     sigma2 = np.asarray(sigma2, dtype=float)
@@ -102,6 +102,7 @@ def normalize_density(values: np.ndarray, grid: np.ndarray) -> np.ndarray:
 
 
 def _validate_cov(cov: np.ndarray, dim: int) -> np.ndarray:
+    """Validate numerical inputs and raise a clear error on mismatch."""
     cov = np.asarray(cov, dtype=float)
     if cov.shape != (dim, dim):
         raise ValueError(f"covariance must have shape ({dim}, {dim}), got {cov.shape}")
@@ -170,7 +171,7 @@ def mvn_log_pdf(
 
 
 def mvn_pdf(x: np.ndarray, mu: np.ndarray, cov: np.ndarray) -> np.ndarray:
-    """Density of a multivariate normal distribution."""
+    """Return multivariate normal density by exponentiating the stable log-density."""
     return np.exp(mvn_log_pdf(x, mu, cov))
 
 

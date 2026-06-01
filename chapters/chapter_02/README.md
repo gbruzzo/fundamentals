@@ -1,8 +1,8 @@
 # Chapter 2 — Hidden State Estimation
 
 Chapter 2 turns the conceptual ideas of Chapter 1 into the canonical
-linear-Gaussian Bayesian inference recipe and walks through nine numbered
-examples that explore variations of it.
+linear-Gaussian Bayesian inference recipe and walks through ten numbered
+examples (2.1–2.10) that explore variations of it.
 
 Every script here is a **thin orchestrator**: it imports configurable building
 blocks from `active_inference` and arranges them into a single figure or

@@ -20,17 +20,25 @@ fundamentals/
 │   ├── core/                  ← distributions, generative process/model, inference, diagnostics, composition, validators
 │   ├── estimators/            ← MLE, MAP, gradient descent, linear regression, EM / factor analysis
 │   ├── visualizations/        ← static plots, slider explorers, animations, diagnostic figures, style
-│   ├── utils/                 ← grids, logging, paths
+│   ├── utils/                 ← grids, logging, paths, NPZ+JSON data exports
 │   ├── menu/                  ← stdlib text menu used by run.sh
 │   └── web/                   ← stdlib local web UI launched by run.sh --web
 ├── chapters/
 │   ├── chapter_01/            ← 4 concept orchestrators
 │   ├── chapter_02/            ← examples 2.1–2.10 + auxiliary + 2 animations
-│   └── chapter_03/            ← examples 3.1–3.7 + 8 animations + 3 diagnostic visualizations
+│   ├── chapter_03/            ← examples 3.1–3.7 + 8 animations + 3 diagnostic visualizations
+│   ├── chapter_04/            ← variational inference: 5 examples + 1 animation + 3 visualizations + interactive
+│   ├── chapter_05/            ← predictive coding: 4 examples + 2 animations (univariate / multivariate / hierarchical)
+│   ├── chapter_06/            ← generalized filtering for perception (Part II): 4 examples + 1 visualization (§6.1–§6.6)
+│   ├── chapter_07/            ← active generalized filtering (Part II): 2 examples + 1 animation (§7.1–§7.5)
+│   ├── chapter_08/            ← learning, attention, and hierarchy (Part II): 2 examples + 1 visualization + 1 animation (§8.1–8.6)
+│   ├── chapter_09/            ← active inference in POMDPs (Part II): 5 examples + 2 animations (§9.1–9.6, discrete)
+│   └── chapter_10/            ← learning & extensions in POMDPs (Part II): 8 examples + 1 visualization + 3 animations (§10.1 Dirichlet A/B/D + novelty, §10.2 habit + precision, §10.3 factorial / two-armed bandit, §10.4 hierarchical)
 ├── docs/                      ← architecture, notation, chapter prose, topic walkthroughs, reference, statistics
 ├── scripts/                   ← batch runners, figure pipeline
 ├── tests/                     ← pytest suite (unit + chapter smoke tests)
-└── output/figures/            ← regenerated PNGs / GIFs per chapter
+├── output/figures/            ← regenerated PNGs / GIFs per chapter
+└── output/data/               ← regenerated NPZ arrays + JSON metadata per chapter
 ```
 
 ## Install
@@ -99,11 +107,13 @@ notes.
 The older batch pipeline still works and is exercised by CI:
 
 ```bash
-# render every figure from Chapters 1–3
+# render every figure from Chapters 1–10
 uv run python scripts/run_all_figures.py
 uv run python scripts/run_all_figures.py --chapters 1
 uv run python scripts/run_all_figures.py --chapters 2 --no-animations
-uv run python scripts/run_all_figures.py --chapters 3 --clean
+uv run python scripts/run_all_figures.py --chapters 4 --clean
+uv run python scripts/validate_rendered_figures.py --root output/figures
+uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
 
 # unit tests
 uv run pytest
@@ -121,6 +131,15 @@ uv run python chapters/chapter_03/example_3_5_bayesian_linear_regression.py --sa
 uv run python chapters/chapter_02/interactive_explorer.py            # GUI window
 ```
 
+When a non-interactive script is run with `--save`, the saved visual is paired
+with raw data in `output/data/chapter_NN/`: a compressed `NPZ` file for numeric
+arrays and a `JSON` manifest for script provenance, CLI args, seed when present,
+figure paths, array shapes/dtypes, and summary statistics. The shared
+`save_or_show` and `save_animation` helpers export figure/animation data
+automatically; scripts with additional numerical traces can call
+`save_chapter_data` directly. Validate a render with
+`scripts/validate_raw_data_exports.py`.
+
 ## What's inside
 
 ### `src/active_inference/` — the library
@@ -137,19 +156,34 @@ uv run python chapters/chapter_02/interactive_explorer.py            # GUI windo
 | `core.posterior` | `Posterior` protocol + `summarize_posterior`, `posterior_mean`, `posterior_std`, `has_*` helpers — works across grid / LGS / BLR posteriors |
 | `core.types` | `assert_cov`, `assert_probabilities` — shape / PSD checks |
 | `core.validators` | `require_1d`, `require_2d`, `require_design_matrix`, `require_finite_array`, `require_in_unit_interval`, `require_int_at_least`, `require_monotone`, `require_non_negative_scalar`, `require_positive_scalar`, `require_same_length` |
+| `core.variational` | `GaussianBelief`, `variational_free_energy` → `VFEComponents` (the five VFE forms), `vfe_g_form`/`vfe_d_form`/`vfe_c_form`/`vfe_e_form`/`vfe_map_form`/`vfe_mle_form`, `log_model_evidence`, `surprisal` — Chapter 4 |
+| `core.predictive_coding` | `GenerativeFunction`/`LinearFunction`/`QuadraticFunction`/`GenericFunction`, `PredictiveCodingModel`, `predictive_coding_free_energy` → `PCFreeEnergy`, `pc_free_energy_grad`(`_fd`), `pc_linear_fixed_point`, `pc_curvature_linear`, `sensory_prediction_error`, `state_prediction_error` — Chapter 5 |
+| `core.generalized_filtering` | §6.1: `DynamicStateSpaceModel`, `gf_free_energy`, `gf_free_energy_grad`(`_fd`), `gf_fixed_point_linear`; §6.2: `MultivariateDynamicModel`, `LinearVectorFunction`/`GenericVectorFunction`, `mv_gf_*`; §6.3–§6.5: `shift_operator`, `embed_flow`, `GeneralizedModel`, `generalized_state_error`/`generalized_sensory_error`, `generalized_free_energy`(`_grad`/`_grad_fd`); §6.6: `gaussian_temporal_covariance`, `correlated_embedding_precision`, `GeneralizedVectorModel`, `generalized_vector_free_energy`(`_grad`/`_grad_fd`) — Chapter 6 |
+| `core.continuous_learning` | `LearningAttentionModel`, `LearningAttentionState`, `LearningAttentionComponents`, `learning_attention_free_energy`, `learning_attention_grad`(`_fd`), `log_precision_to_precision`, `log_precision_to_variance`; `ContinuousHierarchyLayer`, `HierarchicalContinuousModel`, `hierarchical_continuous_free_energy`(`_grad`/`_grad_fd`), `hierarchical_message_terms` — Chapter 8 |
+| `core.diagnostics` (Ch.5 additions) | `gradient_check`, `convergence_report` → `ConvergenceReport`, `oracle_agreement` → `OracleAgreement` |
 | `estimators.mle` | `mle_analytic_linear`, `mle_loss`, `mle_grad_x` |
 | `estimators.map` | `map_analytic_linear`, `map_loss`, `map_grad_x` |
 | `estimators.gradient_descent` | `gradient_descent`, `GradientDescentResult` |
 | `estimators.linear_regression` | `mle_linear_regression`, `gd_linear_regression`, `BayesianLinearRegression`, `BLRPosterior`, `GDRegressionResult`, `add_intercept`, `squared_loss`, `squared_loss_grad` |
 | `estimators.em` | `fit_factor_analysis`, `factor_analysis_e_step`, `factor_analysis_m_step`, `incomplete_log_likelihood`, `FactorAnalysisResult` |
+| `estimators.variational` | `coordinate_search_vfe`, `fixed_form_vi`, `free_form_cavi`, `MeanFieldConfig`, and their result traces (`CoordinateSearchResult`, `FixedFormResult`, `CAVIResult`) — Chapter 4 VBI |
+| `estimators.predictive_coding` | `predictive_coding_inference`, `multivariate_predictive_coding`, `hierarchical_predictive_coding`, `HierarchicalPCModel`, `PredictiveCodingResult`, `MultivariatePCResult`, `HierarchicalPCResult` — Chapter 5 |
+| `estimators.generalized_filtering` | `generalized_filter` (§6.1), `multivariate_generalized_filter` (§6.2), `generalized_filter_gc` (§6.3–§6.5), `generalized_measurements_from_series`, `generalized_vector_filter`, and their process simulators / result types — Chapter 6 |
+| `core.active_inference` / `estimators.active_inference` | `ActiveInferenceAgent`, `action_gradient`, `perception_gradient`; `ActiveEnvironment`, `simulate_active_inference`, `ActiveInferenceResult`; §7.5 `MultivariateActiveInferenceAgent`, `multivariate_action_gradient`, `MultivariateActiveEnvironment`, `simulate_multivariate_active_inference`, `MultivariateActiveInferenceResult` — Chapter 7 (continuous-state AIF) |
+| `estimators.continuous_learning` | `simulate_learning_attention`, `LearningAttentionResult` — Chapter 8 perception, learning, and attention |
+| `core.pomdp` | `POMDPModel`, `infer_states`, `predict_state`, `efe_components`, `EFEComponents`, `evaluate_policy_components`, `PolicyEFETrace`, `efe_risk`, `efe_ambiguity`, `expected_free_energy`, `evaluate_policy`, `policy_posterior`, `action_posterior`, `forward_filter`, `predict_beliefs`, `discrete_vfe`, `softmax`, `one_hot`, `is_stochastic_matrix` — Chapter 9; `dirichlet_expected_value`, `expected_A/B/D`, `accumulate_a/b/d_counts`, `novelty_matrix`, `parameter_novelty`, `efe_with_novelty` — Ch.10 §10.1; `policy_posterior_full`, `precision_gradient`, `learn_precision` — Ch.10 §10.2; `FactorialPOMDP`, `factorial_infer_states`, `factorial_efe`, `factorial_expected_observation`, `factorial_likelihood_message`, `factorial_modality_ambiguity`, `factorial_predict_states` — Ch.10 §10.3 (factorial); `HierarchicalPOMDP`, `hierarchical_layer_vfe`, `hierarchical_layer_efe`, `hierarchical_policy_posterior` — Ch.10 §10.4 (hierarchical) |
+| `estimators.pomdp` | `make_gridworld`, `enumerate_policies`, `simulate_pomdp_agent`, `GridWorldResult` — Chapter 9 §9.5 (Grid World planning); `DirichletParameters`, `LearningResult`, `learn_D_vector`, `simulate_array_learning`, `simulate_learning_agent` — Ch.10 §10.1; `precision_policy_sweep` — Ch.10 §10.2; `make_two_armed_bandit`, `simulate_two_armed_bandit`, `TwoArmedBanditResult` — Ch.10 §10.3 (two-armed bandit); `simulate_hierarchical_agent`, `HierarchicalResult` — Ch.10 §10.4 |
 | `utils.grids` | `make_grid`, `make_2d_grid` |
 | `utils.logging` | `get_logger` — lightweight, consistent logger factory |
 | `utils.io` | `default_figure_dir`, `default_data_dir`, `ensure_dir` |
+| `utils.export` | `save_chapter_data`, `extract_figure_data`, `extract_animation_data`, `data_paths_for_figure`; the NPZ+JSON raw-data contract used by `--save` |
 | `visualizations.plotting` | `plot_prior_likelihood_posterior`, `plot_generating_function`, `plot_likelihood_ridge`, `plot_joint_heatmap`, `plot_gradient_descent`, `plot_precision_comparison`, `plot_2d_gaussian`, `confidence_ellipse`, `save_or_show` |
 | `visualizations.interactive` | `interactive_inference`, `interactive_precision` — matplotlib slider widgets, no `ipywidgets` dependency |
-| `visualizations.animations` | `animate_sequential_posterior`, `animate_gradient_descent`, `animate_2d_posterior`, `animate_em_convergence`, `animate_em_steps`, `animate_sufficient_statistics`, `animate_calibration_growth`, `animate_precision_sweep`, `animate_bimodal_emergence`, `animate_lgs_online`, `animate_blr_predictive_band`, `save_animation` |
+| `visualizations.variational` | `vfe_surface`, `plot_vfe_contour`, `plot_density_evolution`, `plot_vfe_decomposition`, `plot_surprisal_relationship` — Chapter 4 figures |
+| `visualizations.unified` | `plot_recognition_dynamics` (Ch.4 `FixedFormResult` or Ch.5 `PredictiveCodingResult`), `plot_prediction_errors`, `plot_hierarchical_pc`, `plot_correlated_embedding_precision`, `plot_generalized_vector_filter`, `plot_multivariate_active_inference`, `plot_learning_attention`, `plot_hierarchical_message_passing`, `panel_grid`, `finalize`, `layer_colors` — composable Ch.4–10 layer |
+| `visualizations.animations` | `animate_sequential_posterior`, `animate_gradient_descent`, `animate_2d_posterior`, `animate_em_convergence`, `animate_em_steps`, `animate_sufficient_statistics`, `animate_calibration_growth`, `animate_precision_sweep`, `animate_bimodal_emergence`, `animate_lgs_online`, `animate_blr_predictive_band`, `animate_vfe_descent`, `animate_recognition_dynamics`, `animate_hierarchical_pc`, `animate_multivariate_active_inference` (Ch.7 §7.5), `animate_learning_attention` (Ch.8), `animate_parameter_learning` (Ch.10 §10.1), `animate_policy_precision` (Ch.10 §10.2), `animate_two_armed_bandit` (Ch.10 §10.3), `save_animation` |
 | `visualizations.diagnostics` | `plot_calibration`, `plot_cdf_comparison`, `plot_coverage_curve`, `plot_kl_trace`, `plot_posterior_predictive_check`, `plot_qq`, `plot_running_statistics`, `plot_score_trace` |
-| `visualizations.style` | `COLORS`, `DEFAULT_RC`, `figure_style`, `set_default_style`, `annotate_stat_box`, `stat_box_bbox` |
+| `visualizations.style` | `COLORS` (Okabe-Ito colourblind-safe), `DEFAULT_RC`, `figure_style`, `set_default_style`, `annotate_stat_box`, `annotate_point`, `stat_box_bbox` |
 | `menu` | `discover_chapters`, `discover_scripts`, `run_chapter`, `run_all_chapters`, `run_script`, `main` — stdlib text menu (used by `run.sh`) |
 | `web` | `run_server`, `launch`, `main` — stdlib HTTP server (used by `run.sh --web`); tab-per-chapter UI with figure galleries, render buttons, and inline docs |
 
@@ -214,6 +248,88 @@ standard library, and follows the same pattern: parse args, build process
 | `visualize_coverage.py` | diagnostic | Coverage sweep across credible levels |
 | `visualize_posterior_predictive.py` | diagnostic | Posterior predictive check on regression residuals |
 
+**Chapter 4 — Variational Bayesian Inference** (5 examples + 1 animation + 3 visualizations + 1 interactive)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_4_1_coordinate_search.py` | Example 4.1 / Alg. 4.2.1 | Zero-order coordinate search descends the VFE surface (Fig. 4.2.2) |
+| `example_4_2_surprisal.py` | §4.3 | Surprisal `−log p(y)` vs `y` and vs `p(y)` (Fig. 4.3.1) |
+| `example_4_3_vfe_forms.py` | §4.4 | All five VFE forms agree; G/C/E decompositions over a descent (Fig. 4.4.1) |
+| `example_4_6_free_form_cavi.py` | Example 4.6 / Alg. 4.5.1 | Free-form mean-field CAVI on `(x, β₀, β₁)` converges, VFE monotone |
+| `example_4_7_fixed_form.py` | Example 4.7 / Alg. 4.6.1 | Fixed-form gradient VI converges to the exact posterior `N(2.4, 0.05)` (Fig. 4.6.1/4.6.2) |
+| `animation_vfe_descent.py` | bonus | `q(x)` tightening onto the posterior as VFE falls to the surprisal bound (GIF) |
+| `visualize_kl_loss.py` | §4.1 | The KL loss surface vs the VFE surface (same minimum, no posterior needed) |
+| `visualize_vfe_intuition.py` | §4.2 | G-form intuition: `q(x)`, `p(x, y)`, and the posterior (Fig. 4.2.3) |
+| `visualize_model_comparison.py` | §4.3 | Model evidence of a good vs bad model against the true input (Fig. 4.3.2/4.3.3) |
+| `interactive_vfe_explorer.py` | bonus | Slider-driven `(μ, σ²)` exploration of the live VFE decomposition |
+
+**Chapter 5 — Predictive Coding** (4 examples + 2 animations; univariate / multivariate / hierarchical)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_5_1_prediction_errors.py` | §5.1 / Fig. 5.1.2 | Flat-prior MLE and the MAP free energy as two precision-weighted prediction errors |
+| `example_5_3_multivariate.py` | §5.3 | Multivariate predictive coding (vector state, Jacobian `g`) converges |
+| `example_5_4_recognition_dynamics.py` | Alg. 5.2.1 | Recognition dynamics (Eq. 16); `--linear` lands on the Ch.4 grid posterior mean `2.4` |
+| `example_5_7_hierarchical.py` | Example 5.7 / §5.4 | Hierarchical PC converges to `[2,1,0]`, all layer errors → 0, `Σ F = 0` (Fig. 5.4.4) |
+| `animation_recognition_descent.py` | Alg. 5.2.1 | GIF: `μ_x` descending onto the oracle, errors decaying, `𝓕` falling (`--nonlinear` for Fig. 5.2.3) |
+| `animation_hierarchical.py` | Example 5.7 / Fig. 5.4.4 | GIF: layer beliefs settling to `[2,1,0]`, errors → 0, `Σ F → 0` |
+
+**Chapter 6 — Generalized Filtering for Perception** (Part II; §6.1–§6.6)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_6_1_generalized_filter.py` | Example 6.1 / Alg. 6.1.1 | An agent filters a noisy observation stream online; belief `μ_x` tracks a moving hidden state `x*` (Fig. 6.1.3) |
+| `example_6_2_multivariate_filter.py` | Example 6.2 / §6.2 | Multivariate filter on a Hooke's-law oscillator; vector belief tracks the orbit with perception lag (Fig. 6.2.3) |
+| `example_6_6_generalized_coordinates.py` | Example 6.6 / §6.5 | Generalized filtering in generalized coordinates; belief recovers position *and* velocity (Fig. 6.5) |
+| `visualize_6_6_correlated_embedding_orders.py` | §6.6 / Fig. 6.6.2 | Heatmaps of the generalized precision `Π̃(γ)` show how smoothness couples embedding orders |
+| `example_6_7_multivariate_generalized_coordinates.py` | Example 6.7 / §6.6 | Vector generalized-coordinate filtering with correlated precision improves oscillator tracking over the ordinary filter |
+
+**Chapter 7 — Active Generalized Filtering** (Part II; §7.1–§7.5)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_7_2_active_inference.py` | Example 7.2 / Alg. 7.2.1 | Active inference: the agent's action drives the true state to its preferred set-point against an exogenous force (`a → −v*`); the action-perception cycle (Fig. 7.4.5) |
+| `example_7_5_multivariate_active_inference.py` | §7.5 / Alg. 7.5.1 | A 2-D vector agent uses generalized measurements and vector action to counter an exogenous attractor |
+| `animation_7_5_multivariate_active_inference.py` | §7.5 animated | GIF of state, belief, action, sensory error, and free-energy evolution in the vector action-perception loop |
+
+**Chapter 8 — Learning, Attention, and Hierarchical Models** (Part II; §8.1–§8.6)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_8_1_learning_attention.py` | §8.1 / Alg. 8.1.1 | Triple estimation: hidden state, first-order parameter, and second-order log precision all descend one VFE objective |
+| `example_8_2_hierarchical_continuous.py` | §8.2–§8.4 | Two-layer continuous hierarchy: an upper context supplies a top-down prior for the lower state |
+| `visualize_message_passing.py` | §8.5 | Forward prediction-error messages and backward prediction messages in the hierarchy |
+| `animation_learning_attention.py` | §8.1 | GIF: state, parameter, log precision, variance, and free energy converge |
+
+**Chapter 9 — Active Inference in POMDPs** (Part II; §9.1–§9.6, discrete)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_9_1_state_inference.py` | Example 9.1 / §9.1 | Discrete categorical Bayesian state inference (`s = σ(log Aᵀô + log D)`); a weather agent infers the state from a one-hot observation (Fig. 9.1.3) |
+| `example_9_2_dynamic_filtering.py` | §9.2–§9.3 | Dynamic categorical filtering with `B`-propagated priors and per-step discrete VFE |
+| `example_9_3_discrete_vfe.py` | §9.3 | Two-state simplex sweep: discrete VFE is minimized at the exact posterior and touches surprisal |
+| `example_9_4_gridworld.py` | §9.4–9.5 / Alg. 9.5.1 | Grid World planning by **expected free energy** (`G = risk + ambiguity`); the agent navigates a 3×3 grid to the goal in the minimum 4 steps |
+| `example_9_6_exploration_exploitation.py` | §9.6 | EFE decomposition (`risk + ambiguity`) makes exploration/exploitation visible |
+| `animation_belief_filtering.py` | §9.2 | GIF: categorical beliefs update over observations |
+| `animation_efe_tradeoff.py` | §9.6 | GIF: sharpening preferences shifts policy posterior from ambiguity-driven exploration toward risk-driven exploitation |
+
+**Chapter 10 — Learning & extensions in POMDPs** (Part II; §10.1 Dirichlet `A`/`B`/`D` learning, §10.2 habit + precision, §10.3 factorial, §10.4 hierarchical)
+
+| Script | Mirrors | What it shows |
+|---|---|---|
+| `example_10_1_learn_D.py` | Example 10.1 / Fig 10.1.2 | Learn the state prior `D` by accumulating initial-state beliefs; reproduces `d=[45.1,5.9]`, `D≈[0.884,0.116]` |
+| `example_10_2_learn_A.py` | Example 10.2 / Fig 10.1.3 | Learn the likelihood `A` by counting (observation, state) pairs; entries converge as Dirichlet confidence grows |
+| `example_10_3_learn_B.py` | Example 10.3 / Fig 10.1.4 | Learn the transition `B` by counting (next-state, current-state) pairs |
+| `example_10_4_novelty.py` | Example 10.4 / §10.1 | Parameter-novelty `o·(Ws)=0.483` (information gain) + a novelty-seeking agent that learns `A` while acting (Alg. 10.1.1) |
+| `example_10_5_precision.py` | Example 10.5 / Fig 10.2.3 | §10.2 policy posterior `σ(log E − γG)` swept over precision `γ` (uniform vs strong habits); reproduces Fig 10.2.3 exactly |
+| `example_10_6_precision_learning.py` | Example 10.6 / Fig 10.2.4 | §10.2 learning `γ` from a Gamma prior (Eq. 23–25); `F` close to `G` ⇒ high confidence, far ⇒ low |
+| `example_10_7_two_armed_bandit.py` | Example 10.7 / Figs 10.3.6–7 | §10.3 factorial two-armed bandit; the agent infers the hidden context and exploits the better machine (`--explore` = less risk-averse) |
+| `example_10_8_hierarchical.py` | §10.4 / Fig 10.4.1 | §10.4 two-layer hierarchical POMDP; a slow top regime contextualizes a fast bottom layer (nested time scales) |
+| `visualize_factorial_structure.py` | §10.3 / Fig 10.3.4 | Heatmaps of the two-armed bandit's factorial likelihood `A` set |
+| `animation_learning.py` | §10.1 | Animated Dirichlet learning of `A`/`B` over trials |
+| `animation_precision.py` | §10.2 | Animated policy-precision sweep (Fig 10.2.2) |
+| `animation_bandit.py` | §10.3 | Animated two-armed bandit (context belief + policy posterior over time) |
+
 ### `docs/` — reference documentation
 
 | Subfolder / file | Contents |
@@ -222,7 +338,7 @@ standard library, and follows the same pattern: parse args, build process
 | `notation.md` | Symbol-to-identifier mapping for variables, parameters, densities, algorithms |
 | `cookbook.md` | Copy-paste recipes for the 10 most-used workflows |
 | `reading_order.md` | Reader-path guide (book follower, library user, contributor) |
-| `chapters/` | Per-book-chapter concept maps (`chapter_01.md`, `chapter_02.md`, `chapter_03.md`) |
+| `chapters/` | Per-book-chapter concept maps (`chapter_01.md` … `chapter_10.md`) |
 | `topics/` | Concept walkthroughs (Bayesian inference, generative models, learning, FEP, …) |
 | `statistics/` | Statistical-tool references (KL, entropy, scoring rules, calibration, …) |
 | `reference/` | Per-subpackage API catalogues (`core.md`, `estimators.md`, `utils.md`, `visualizations.md`) |
@@ -237,18 +353,22 @@ The directory mirrors `src/active_inference/` one-for-one (see
 |---|---|---|
 | `tests/core/` | `core/` | Univariate + multivariate densities, generative process/model, grid Bayesian inference, LGS, diagnostics, posterior protocol, validators, type asserts |
 | `tests/estimators/` | `estimators/` | MLE / MAP closed-form, gradient descent, OLS / BLR, factor-analysis EM monotonicity & subspace recovery |
-| `tests/utils/` | `utils/` | Grid validation, path conventions, logger factory |
+| `tests/utils/` | `utils/` | Grid validation, path/export conventions, logger factory |
 | `tests/visualizations/` | `visualizations/` | Figures save correctly, animations are valid `FuncAnimation` objects, diagnostic plots |
-| `tests/chapters/` | `chapters/` | Subprocess smoke tests running every orchestrator with `--save` |
+| `tests/chapters/` | `chapters/` | Subprocess smoke tests running every orchestrator with `--save` and checking raw-data sidecars |
 
 ## Roadmap
 
 - [x] **Part I, Ch. 1** — hypothesis-testing brain, inverse problem demos
 - [x] **Part I, Ch. 2** — hidden state estimation, MLE, MAP, gradient descent
 - [x] **Part I, Ch. 3** — combining learning and inference (regression, BLR, LGS, factor-analysis EM)
-- [ ] Part I, Ch. 4 — variational Bayesian inference
-- [ ] Part I, Ch. 5 — predictive coding
-- [ ] Part II — generalized filtering, active generalized filtering, POMDP
+- [x] **Part I, Ch. 4** — variational Bayesian inference (VFE & its 5 forms, coordinate search, fixed-form VI, mean-field CAVI)
+- [x] **Part I, Ch. 5** — predictive coding (prediction-error form of VFE, recognition dynamics, univariate / multivariate / hierarchical PC, unified Ch.4–5 visualizations)
+- [x] **Part II, Ch. 6** — generalized filtering for perception (§6.1: online generalized filter; §6.2: multivariate filter, Hooke's-law oscillator; §6.3–6.5: generalized coordinates of motion and the `D` shift operator; §6.6: correlated embedding-order precision `S(γ)^-1 ⊗ Π` plus Example 6.7 multivariate generalized coordinates).
+- [x] **Part II, Ch. 7** — active generalized filtering (§7.1–7.4: action + preference prior, the action-perception cycle, action through the forward model, homeostatic set-point regulation; §7.5: multivariate AIF in generalized coordinates with vector action and animation).
+- [~] **Part II, Ch. 8** — learning, attention, and hierarchical continuous models. §8.1: triple estimation over hidden state, first-order parameter, and second-order log precision; §8.2–§8.6: two-layer continuous hierarchy and forward/backward message passing. Further nonlinear hierarchy examples remain.
+- [~] **Part II, Ch. 9** — active inference in POMDPs. §9.1: the `A`/`B`/`C`/`D` categorical generative model + exact discrete hidden-state inference (verified vs the book's Eq. 15). §9.2–9.3: dynamic filtering (HMM forward pass `forward_filter`, prediction rollout, discrete VFE) with static and animated belief-sequence figures. §9.4–9.6: **expected free energy** (risk + ambiguity, verified vs Eq. 63/68), first-class EFE component traces, policy/action selection, a Grid World planning agent (reaches goal in the minimum 4 steps), and exploration/exploitation figures/animation. 
+- [x] **Part II, Ch. 10** — learning & extensions in POMDPs. §10.1: **Dirichlet** learning of `A`/`B`/`D` (Eq. 4–6, verified vs Examples 10.1–10.3), the **parameter-novelty** term (Eq. 12–15, verified vs Example 10.4 `o·(Ws)=0.483`), and the learning agent (Alg. 10.1.1). §10.2: **habit** (`E`) + **policy precision** `γ` (Eq. 22, reproduces Fig 10.2.3 exactly; γ-learning Eq. 23–25, verified vs Example 10.6). §10.3: **factorial depth** (state factors + observation modalities) and the two-armed bandit (Example 10.7) — factorial inference/EFE reduce exactly to Ch.9; the agent learns the hidden context and exploits the better arm. §10.4: **hierarchical depth** (nested POMDP layers, Eq. 39–50) — per-layer VFE/EFE reduce to the flat case; a slow top regime contextualizes a fast bottom layer.
 - [ ] Part III — applications and extensions
 
 ## Contributing

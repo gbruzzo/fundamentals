@@ -22,7 +22,14 @@ docs/
 ├── chapters/                  ← per-book-chapter concept maps
 │   ├── chapter_01.md
 │   ├── chapter_02.md
-│   └── chapter_03.md
+│   ├── chapter_03.md
+│   ├── chapter_04.md
+│   ├── chapter_05.md
+│   ├── chapter_06.md
+│   ├── chapter_07.md
+│   ├── chapter_08.md
+│   ├── chapter_09.md
+│   └── chapter_10.md
 ├── topics/                    ← cross-cutting concept walkthroughs
 │   ├── active_inference.md
 │   ├── bayesian_inference.md

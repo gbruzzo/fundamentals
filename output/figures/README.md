@@ -13,7 +13,7 @@ PNG and GIF artifacts produced by the chapter orchestrators when run with
 | [`chapter_04/`](chapter_04/) | `chapters/chapter_04/*.py --save` | 11 PNGs + 1 GIF for variational inference, VFE forms, and intuition figures. |
 | [`chapter_05/`](chapter_05/) | `chapters/chapter_05/*.py --save` | 5 PNGs + 2 GIFs for predictive coding and hierarchy. |
 | [`chapter_06/`](chapter_06/) | `chapters/chapter_06/*.py --save` | 5 PNGs for generalized filtering, generalized coordinates, and correlated embedding-order precision. |
-| [`chapter_07/`](chapter_07/) | `chapters/chapter_07/*.py --save` | 2 PNGs + 1 GIF for active generalized filtering, including the §7.5 vector action-perception loop. |
+| [`chapter_07/`](chapter_07/) | `chapters/chapter_07/*.py --save` | 2 PNGs for active generalized filtering, including the §7.5 vector action-perception loop. |
 | [`chapter_08/`](chapter_08/) | `chapters/chapter_08/*.py --save` | 3 PNGs + 1 GIF for learning/attention, hierarchy, and message passing. |
 | [`chapter_09/`](chapter_09/) | `chapters/chapter_09/*.py --save` | 5 PNGs + 2 GIFs for discrete POMDP inference, VFE, EFE, Grid World, and exploration. |
 | [`chapter_10/`](chapter_10/) | `chapters/chapter_10/*.py --save` | 9 PNGs + 3 GIFs for POMDP learning, precision, factorial, and hierarchical examples. |

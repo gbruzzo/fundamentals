@@ -40,8 +40,8 @@ python scripts/run_all_figures.py --chapters 3
 ./scripts/run_all_chapter_03.sh
 ```
 
-Each script accepts `--save` for headless rendering and `--seed` for
-reproducibility.
+Each script accepts `--save` for headless rendering; stochastic scripts also
+accept `--seed` for reproducibility.
 
 ## Library Usage
 

@@ -100,10 +100,10 @@ uv run python chapters/chapter_02/example_2_2_linear_probabilistic.py
 uv run python chapters/chapter_03/example_3_5_bayesian_linear_regression.py --save
 ```
 
-All scripts accept `--save` to write figures to `output/figures/` and
-`--seed` for reproducibility. Chapter 2/3 scripts additionally accept
-`--x-true`, `--y-obs`, `--n-samples`, etc. — see each script's docstring
-or `--help`.
+All non-interactive scripts accept `--save` to write figures to
+`output/figures/`; stochastic scripts also accept `--seed` for
+reproducibility. Chapter 2/3 scripts additionally accept `--x-true`,
+`--y-obs`, `--n-samples`, etc. — see each script's docstring or `--help`.
 
 ## Running all figures
 

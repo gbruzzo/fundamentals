@@ -76,8 +76,8 @@ domain logic.
 
 - All variances are *variances*, not standard deviations.
 - Densities are evaluated on 1-D NumPy grids; integration uses `np.trapezoid`.
-- Every chapter script accepts `--save` for headless rendering and `--seed`
-  for reproducibility.
+- Every chapter script accepts `--save` for headless rendering; stochastic
+  scripts also accept `--seed` for reproducibility.
 - With `--save`, every non-interactive chapter script must produce both the
   visual artifact and at least one `output/data/chapter_NN/<stem>.npz` +
   `<stem>.json` sidecar. Use `save_chapter_data` directly for bespoke exports
@@ -117,7 +117,8 @@ that mainly glue imports).
    (with corresponding unit tests in `tests/<sub>/`).
 2. Create a thin orchestrator in the appropriate `chapters/chapter_<N>/`
    directory (≤ ~120 lines; imports only from `active_inference`).
-3. Accept `--save` and `--seed` CLI flags.
+3. Accept `--save`; add `--seed` whenever the script samples or otherwise
+   depends on pseudo-randomness.
 4. Document the script in the chapter's `README.md`.
 5. Ensure `--save` writes reconstructable raw data. Prefer plotting through
    `save_or_show` / `save_animation`; if the script has non-plotted arrays,

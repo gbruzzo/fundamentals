@@ -97,8 +97,8 @@ See [`reference/`](reference/) for a full per-subpackage API catalogue.
 - All densities are evaluated on a 1-D NumPy grid and integrated with the
   trapezoid rule (`np.trapezoid`); this is sufficient for the scalar Part-I
   examples.
-- Every chapter script accepts `--save` for headless rendering and `--seed`
-  for reproducibility.
+- Every chapter script accepts `--save` for headless rendering; stochastic
+  scripts also accept `--seed` for reproducibility.
 - Random number generators are passed in explicitly via `numpy.random.Generator`
   — no global state.
 - The `menu/` subpackage is stdlib-only — no `numpy`/`matplotlib` imports.

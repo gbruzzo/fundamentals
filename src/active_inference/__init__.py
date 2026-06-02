@@ -12,6 +12,8 @@ they wire configurable components from this package together,
 producing the figures and numerical results discussed in the text.
 """
 
+from __future__ import annotations
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:  # pragma: no cover - metadata lookup is environment dependent

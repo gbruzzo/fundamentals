@@ -23,8 +23,9 @@ python chapters/chapter_01/03_bayes_intuition.py --save
 python scripts/run_all_figures.py --chapters 1
 ```
 
-Each script accepts `--save` for headless rendering and `--seed` for
-reproducibility. With no flags, an interactive matplotlib window opens.
+Each script accepts `--save` for headless rendering; stochastic scripts also
+accept `--seed` for reproducibility. With no flags, an interactive matplotlib
+window opens.
 
 ## Library Usage
 

@@ -27,9 +27,10 @@ Directory: `/chapters/chapter_02/`
 | `animation_sequential.py` | bonus | GIF: posterior collapsing as i.i.d. samples arrive |
 | `animation_gradient_descent.py` | bonus | GIF: MLE/MAP iterate rolling down the loss curve |
 
-Common CLI flags across all example scripts: `--save` (headless), `--seed`.
-Some scripts accept `--x-true`, `--y-obs`, `--n-samples`, `--epsilon2`, `--lr`,
-`--max-iter` — see individual `--help` output.
+Common CLI flags across non-interactive scripts: `--save` (headless); scripts
+that sample data also accept `--seed`. Some scripts accept `--x-true`,
+`--y-obs`, `--n-samples`, `--epsilon2`, `--lr`, `--max-iter` — see individual
+`--help` output.
 
 ## Running
 

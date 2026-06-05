@@ -56,6 +56,46 @@ Statistical diagnostics. The full statistical-tool reference lives in
 | `oracle_agreement(estimate, oracle, *, tol=1e-2)` | floats → `OracleAgreement` | Compares an estimate to an independent oracle (e.g. PC fixed point vs grid posterior mean). |
 | `OracleAgreement` | dataclass | `estimate`, `oracle`, `abs_error`, `agree`. |
 
+## `core.free_energy_forms`
+
+Pedagogical decompositions for comparing free-energy variants without claiming
+one universal literature convention for every form.
+
+| Symbol | Role |
+|---|---|
+| `FreeEnergyForm` | Frozen dataclass with `name`, scalar `total`, additive `terms`, and `term_vector(order)`. |
+| `expected_free_energy_form(risk, ambiguity, epistemic_value=0.0)` | Returns EFE as `risk + ambiguity - epistemic_value`. |
+| `free_energy_of_future(present_free_energy, expected_future_free_energy)` | Adds present free energy and expected future free energy. |
+| `observed_predicted_free_energy(observed_free_energy, predicted_free_energy, observation_weight=0.5)` | Convex blend of observed and predicted terms. |
+| `generalized_free_energy_form(present_free_energy, future_free_energy, information_gain=0.0)` | Returns `present + future - information_gain`. |
+| `bethe_free_energy_form(factor_energy, variable_entropy, consistency_penalty=0.0)` | Bethe-style energy-minus-entropy form with caller-supplied consistency penalty. |
+| `renyi_bound(probabilities, energies, alpha)` | Renyi-style certainty-equivalent energy for `alpha != 1`. |
+| `renyi_limit_energy(probabilities, energies)` | Alpha-to-one Renyi limit, equal to probability-weighted expected energy. |
+| `free_energy_variant_table(risk, ambiguity, epistemic_value)` | Returns comparable policy-indexed arrays for EFE, FEF, and GFE sweeps. |
+
+## `core.factor_graph`
+
+Small categorical factor-graph helpers for extras and teaching examples.
+
+| Symbol | Role |
+|---|---|
+| `normalize_message(message)` | Validate and normalize a non-negative 1-D categorical message. |
+| `categorical_factor_message(factor, incoming, target_axis)` | Sum-product factor-to-variable message for one categorical target axis. |
+| `sum_product_chain(prior, transitions, likelihoods)` | Normalized forward messages for a categorical state-space chain. |
+| `variational_message_update(log_factor, incoming_expectations, target_axis)` | VMP-style categorical softmax update for one variable. |
+
+## `core.ergodic`
+
+Ergodic-density and entropy-bound helpers for FEP extras topics.
+
+| Symbol | Role |
+|---|---|
+| `EntropyBound` | Frozen dataclass storing `entropy`, `upper_bound`, and non-negative `gap`. |
+| `ergodic_density(trajectory, *, bins=80, bounds=None)` | Histogram estimate of a normalized one-dimensional ergodic density. |
+| `density_entropy(x_grid, density)` | Differential entropy `-int p(x) log p(x) dx` on a grid. |
+| `entropy_upper_bound_from_vfe(entropy, vfe_upper_bound)` | Build an `EntropyBound` from an entropy and VFE-like upper bound. |
+| `ergodic_ou_trajectory(n_steps=500, drift=0.08, diffusion=0.25, initial=2.5)` | Deterministic-noise OU teaching trajectory for reproducible demos. |
+
 ## `core.generative_process`
 
 Sample-only generative processes — the *environment*. A process exposes
@@ -146,6 +186,25 @@ verifies their agreement. The D-form builds `log p(x|y) = log p(x,y) − log p(y
 directly (not `log` of the normalized posterior array) so it stays stable even
 for beliefs far in the tail where the posterior array underflows.
 
+## `core.thermodynamics` — thermodynamic / FEP bridge
+
+Small helpers for the explicit analogy used by the extras topic scripts:
+`U = E_q[-log p(x,y)]`, `S = H[q]`, and `A = U - T S`. At unit temperature
+and zero pressure-volume contribution, `A` equals variational free energy. See
+the [thermodynamic bridge topic](../topics/thermodynamic_bridge.md) for the
+equation flow and analogy boundary.
+
+| Symbol | Role |
+|---|---|
+| `ThermodynamicState` | Frozen dataclass storing `energy`, `entropy`, `temperature`, `pressure`, and `volume`; properties expose `helmholtz_free_energy`, `enthalpy`, and `gibbs_free_energy`. |
+| `canonical_probabilities(energies, temperature=1.0)` | Stable Boltzmann probabilities proportional to `exp(-energy / temperature)`. |
+| `expected_energy(probabilities, energies)` | Probability-weighted internal energy. |
+| `boltzmann_entropy(probabilities)` | Discrete entropy `-sum p log p` in nats. |
+| `helmholtz_free_energy(energy, entropy, temperature=1.0)` | `A = U - T S`. |
+| `enthalpy(energy, pressure=0.0, volume=0.0)` | `H = U + pV`; pressure-volume terms are caller supplied. |
+| `gibbs_free_energy(energy, entropy, temperature=1.0, pressure=0.0, volume=0.0)` | `G = H - T S`. |
+| `vfe_thermodynamic_state(q, model, y, x_grid, ...)` | Converts `variational_free_energy` components into a `ThermodynamicState`. |
+
 ## `core.predictive_coding` — predictive coding (Chapter 5)
 
 The MAP/Laplace specialization of VFE used by predictive coding: a generative
@@ -234,6 +293,7 @@ and finite-difference-verifiable while preserving the book's time-scale separati
 | `LearningAttentionModel(state_attractor, theta_prior_mean=0, zeta_prior_mean=0, sigma2_y=1, sigma2_theta=1, sigma2_zeta=1)` | dataclass | Compact triple-estimation model with observation prediction `mu_x - mu_theta`. |
 | `LearningAttentionState(mu_x, mu_theta, mu_zeta)` | dataclass | Variational means for hidden state, first-order parameter, and log precision. |
 | `LearningAttentionComponents` | dataclass | VFE, prediction errors, learned precision/variance, and per-term contributions. |
+| `LearningAttentionGradient` | dataclass | Gradient components for `(mu_x, mu_theta, mu_zeta)` with `as_vector()`. |
 | `learning_attention_free_energy(model, y, state)` | → `LearningAttentionComponents` | Chapter 8 free energy for perception, learning, and attention. |
 | `learning_attention_grad(model, y, state)` | → (3,) | Analytic gradient w.r.t. `(mu_x, mu_theta, mu_zeta)`. |
 | `learning_attention_grad_fd(model, y, state, eps=1e-5)` | → (3,) | Finite-difference gradient oracle. |

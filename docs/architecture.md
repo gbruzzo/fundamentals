@@ -8,7 +8,7 @@ class so chapter scripts can mix and match them.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ chapters/<chapter>/                                          │  thin orchestrators
+│ chapters/<chapter>/ and extras/<topic>/                      │  thin orchestrators
 │  └── 30–120 LOC scripts importing from `active_inference`    │
 └──────────────────────┬───────────────────────────────────────┘
                        │
@@ -17,6 +17,12 @@ class so chapter scripts can mix and match them.
 │ src/active_inference/menu/      src/active_inference/web/    │  text + browser UIs
 │   runner.py, tui.py               server.py, templates.py    │  stdlib-only
 │   (run.sh)                        (run.sh --web)             │
+└──────────────────────┬───────────────────────────────────────┘
+                       │
+                       ▼
+┌──────────────────────────────────────────────────────────────┐
+│ src/active_inference/extra_topics.py                         │  extras registry,
+│   topic metadata, deterministic demos, CLI runners           │  simulations, GIFs
 └──────────────────────┬───────────────────────────────────────┘
                        │
                        ▼
@@ -42,7 +48,8 @@ class so chapter scripts can mix and match them.
 │   distributions.py, generative_process.py,                   │  inference + diagnostics
 │   generative_model.py, inference.py, lgs.py,                 │  + VFE / predictive coding
 │   compose.py, diagnostics.py, posterior.py,                  │
-│   types.py, validators.py, variational.py,                   │
+│   types.py, validators.py, variational.py, thermodynamics.py,│
+│   free_energy_forms.py, factor_graph.py, ergodic.py,         │
 │   predictive_coding.py, continuous_learning.py,              │
 │   generalized_filtering.py, active_inference.py, pomdp.py    │
 └──────────────────────┬───────────────────────────────────────┘
@@ -50,13 +57,65 @@ class so chapter scripts can mix and match them.
                        ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ src/active_inference/utils/                                  │  grids, logging, paths
-│   grids.py, logging.py, io.py                                │
+│   grids.py, logging.py, io.py, export.py                     │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 Higher layers depend only on lower layers; layers never import one another
 sideways. This keeps the dependency graph acyclic and lets you swap out, say,
 the inference engine without touching the chapter scripts.
+
+## Dependency and artifact flow
+
+The implementation has two linked flows: import dependencies point downward
+through the library layers, while rendered artifacts and raw-data sidecars flow
+out from chapter and extras scripts into `output/` and are checked by validators.
+
+```mermaid
+flowchart TB
+    U["User entry points<br/>run.sh, active-inference-menu, active-inference-web"]
+    C["chapters/chapter_NN<br/>thin orchestrators"]
+    R["extras/topic<br/>thin topic orchestrators"]
+    B["extra_topics<br/>registry, demos, runners"]
+    W["menu and web<br/>discovery plus subprocess runners"]
+    V["visualizations<br/>figures, animations, diagnostics"]
+    E["estimators<br/>iterative algorithms and simulations"]
+    K["core<br/>models, inference, VFE, POMDP math"]
+    X["utils<br/>grids, paths, logging, NPZ plus JSON export"]
+    F["output/figures<br/>PNG and GIF artifacts"]
+    D["output/data<br/>NPZ arrays plus JSON manifests"]
+    T["tests and validators<br/>pytest, validate_rendered_figures, validate_raw_data_exports"]
+
+    U --> C
+    U --> R
+    U --> W
+    W --> C
+    W --> R
+    C --> V
+    C --> E
+    C --> K
+    C --> X
+    R --> V
+    R --> B
+    R --> K
+    R --> X
+    B --> V
+    B --> K
+    B --> X
+    V --> K
+    V --> X
+    E --> K
+    E --> X
+    K --> X
+    V --> F
+    V --> D
+    C --> D
+    R --> D
+    F --> T
+    D --> T
+    C --> T
+    K --> T
+```
 
 ## Key types
 
@@ -75,6 +134,10 @@ the inference engine without touching the chapter scripts.
 | `Pipeline`                   | `core/compose.py`               | One-shot wiring of process + model + grid inference. |
 | `RunningPosteriorStats`      | `core/compose.py`               | Online posterior trace for animations / diagnostics. |
 | `Posterior` (protocol)       | `core/posterior.py`             | Structural type satisfied by `InferenceResult`, `LGSPosterior`, `BLRPosterior`. |
+| `ThermodynamicState`         | `core/thermodynamics.py`        | Explicit `U`, `S`, `T`, `p`, `V` bridge; at `T=1,pV=0`, `U-TS` equals VFE. |
+| `FreeEnergyForm`             | `core/free_energy_forms.py`     | Named Part III free-energy teaching decomposition with scalar total and additive terms. |
+| `EntropyBound`               | `core/ergodic.py`               | Entropy quantity, VFE-like upper bound, and residual gap for FEP extras. |
+| `ExtraTopicSpec`             | `extra_topics.py`               | Registry metadata for a book-grounded extras topic, including family, sections, and artifact modes. |
 | `CalibrationCurve`           | `core/diagnostics.py`           | Empirical vs nominal coverage at chosen credible levels. |
 | `PosteriorPredictiveCheck`   | `core/diagnostics.py`           | Replicated-statistic Bayesian p-value. |
 | `BayesianLinearRegression`   | `estimators/linear_regression.py`| Conjugate Gaussian update with `fit`, `fit_sequential`, predictive bands. |
@@ -87,7 +150,7 @@ the inference engine without touching the chapter scripts.
 | `GeneralizedVectorModel`     | `core/generalized_filtering.py` | Chapter 6 vector generalized-coordinate model with correlated embedding-order precision. |
 | `MultivariateActiveInferenceAgent` | `core/active_inference.py` | Chapter 7 vector action-perception agent in generalized coordinates. |
 | `MultivariateActiveInferenceResult` | `estimators/active_inference.py` | Vector state, belief, action, generalized measurement, error, and VFE traces. |
-| `ChapterEntry` / `ScriptEntry` | `menu/runner.py`              | Discovered chapter folder + runnable script descriptor. |
+| `ChapterEntry` / `ExtraTopicEntry` / `ScriptEntry` | `menu/runner.py` | Discovered chapter or extras folder + runnable script descriptor. |
 
 See [`reference/`](reference/) for a full per-subpackage API catalogue.
 
@@ -97,8 +160,11 @@ See [`reference/`](reference/) for a full per-subpackage API catalogue.
 - All densities are evaluated on a 1-D NumPy grid and integrated with the
   trapezoid rule (`np.trapezoid`); this is sufficient for the scalar Part-I
   examples.
-- Every chapter script accepts `--save` for headless rendering; stochastic
-  scripts also accept `--seed` for reproducibility.
+- Every chapter and extras script accepts `--save` for headless rendering;
+  stochastic scripts also accept `--seed` for reproducibility.
+- Extras static, simulation, and animation scripts follow the
+  `visualize_*.py` / `simulate_*.py` / `animation_*.py` naming convention and
+  are validated against `docs/reference/book_topic_matrix.md`.
 - Random number generators are passed in explicitly via `numpy.random.Generator`
   — no global state.
 - The `menu/` subpackage is stdlib-only — no `numpy`/`matplotlib` imports.
@@ -120,12 +186,13 @@ See [`reference/`](reference/) for a full per-subpackage API catalogue.
 
 1. Add a method or class to the appropriate `core/` or `estimators/` module
    (with tests in `tests/<sub>/`).
-2. Drop a thin orchestrator into `chapters/chapter_<N>/` that imports your
-   new helper. The script should be ≤ ~120 lines.
+2. Drop a thin orchestrator into `chapters/chapter_<N>/` or
+   `extras/<topic>/` that imports your new helper. The script should be
+   ≤ ~120 lines.
 3. Document it in the chapter's concept map
    [`docs/chapters/chapter_<N>.md`](chapters/) and the in-tree
-   `chapters/chapter_<N>/README.md`. The
-   [`run.sh`](../run.sh) menu and `tests/chapters/test_smoke.py` will pick
-   it up automatically as long as it follows the
-   `example_*.py` / `animation_*.py` / `visualize_*.py` naming convention
-   and accepts `--save`.
+   `chapters/chapter_<N>/README.md`, or in `extras/<topic>/README.md` for an
+   extras topic. The [`run.sh`](../run.sh) menu, chapter smoke tests, and
+   extras smoke tests will pick it up automatically as long as it follows the
+   `example_*.py` / `animation_*.py` / `simulate_*.py` / `visualize_*.py`
+   naming convention and accepts `--save`.

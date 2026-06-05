@@ -62,10 +62,12 @@ All endpoints return JSON unless otherwise noted.
 | GET    | `/`                               | SPA shell (HTML). |
 | GET    | `/favicon.svg` (or `.ico`)        | Inline SVG favicon (mono with red dot). |
 | GET    | `/static/app.css`, `app.js`       | Inline asset bundles. |
-| GET    | `/api/index`                      | Chapters (with per-kind counts, subtitle, figure count) and top-level docs. |
+| GET    | `/api/index`                      | Chapters and extras with per-kind counts, subtitles, figure counts, and extras family/section metadata. |
 | GET    | `/api/chapter/<N>`                | Scripts (with size, mtime, docstring, example number), figures (with size, mtime, dimensions, generated_by), inline-rendered README, and chapter doc links. |
+| GET    | `/api/extra/<topic>`              | Extras scripts, figures, README HTML, family, summary, chapters, and book sections. |
 | GET    | `/api/doc/<id>`                   | Rendered Markdown for one doc page. |
 | GET    | `/figures/<NN>/<file>`            | Static file under `output/figures/`. |
+| GET    | `/figures/extras/<topic>/<file>`  | Static file under `output/figures/extras/<topic>/`. |
 | GET    | `/docs-raw/<path>`                | Static file under `docs/`. |
 | POST   | `/api/run`                        | Render one chapter script (non-interactive). |
 | POST   | `/api/launch-interactive`         | Launch a slider script on the host. |
@@ -82,11 +84,16 @@ allowed base directory.
   filter input, the lightbox, and the action menu are all in
   `templates.JS`.
 - **Same discovery layer as the menu.** Both UIs converge on
-  `active_inference.menu.runner.discover_chapters`; if you add a new
-  chapter folder, both pick it up automatically.
+  `active_inference.menu.runner.discover_chapters` and
+  `discover_extras`; if you add a new chapter or registry-backed extras
+  folder, both pick it up automatically.
 - **Subprocess for execution.** The "Render" button reuses
   `active_inference.menu.runner.run_script`, so figures land in the
-  same `output/figures/chapter_<NN>/` directory as the CLI workflows.
+  same `output/figures/chapter_<NN>/` or `output/figures/extras/<topic>/`
+  directory as the CLI workflows. After rendering extras through the web UI,
+  `uv run python scripts/validate_book_topic_coverage.py --require-rendered`
+  checks the registry declarations against the resulting PNG/GIF media and
+  NPZ+JSON sidecars.
 
 ## Visual identity
 

@@ -28,7 +28,8 @@ output/figures/
 ├── chapter_07/   ← from chapters/chapter_07/*.py
 ├── chapter_08/   ← from chapters/chapter_08/*.py
 ├── chapter_09/   ← from chapters/chapter_09/*.py
-└── chapter_10/   ← from chapters/chapter_10/*.py
+├── chapter_10/   ← from chapters/chapter_10/*.py
+└── extras/       ← from extras/<topic>/visualize_<topic>.py
 ```
 
 ## Filename contract

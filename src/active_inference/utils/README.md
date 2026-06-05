@@ -1,7 +1,7 @@
 # src/active_inference/utils/ — Utilities
 
 Small helpers used across the package: grid construction, logging, output-path
-conventions, and raw NPZ+JSON exports for saved chapter artifacts.
+conventions, and raw NPZ+JSON exports for saved chapter and extras artifacts.
 
 ## Files
 
@@ -10,7 +10,7 @@ conventions, and raw NPZ+JSON exports for saved chapter artifacts.
 | [`grids.py`](grids.py) | `make_grid`, `make_2d_grid` |
 | [`logging.py`](logging.py) | `get_logger` |
 | [`io.py`](io.py) | `default_figure_dir`, `default_data_dir`, `ensure_dir` |
-| [`export.py`](export.py) | `save_chapter_data`, `extract_figure_data`, `extract_animation_data`, `data_paths_for_figure` |
+| [`export.py`](export.py) | `save_chapter_data`, `save_extra_data`, `extract_figure_data`, `extract_animation_data`, `data_paths_for_figure`, `data_paths_for_extra_figure` |
 | `__init__.py` | Re-exports all public names |
 
 ## Public API
@@ -19,7 +19,7 @@ conventions, and raw NPZ+JSON exports for saved chapter artifacts.
 from active_inference.utils.grids import make_grid, make_2d_grid
 from active_inference.utils.logging import get_logger
 from active_inference.utils.io import default_figure_dir, default_data_dir, ensure_dir
-from active_inference.utils import save_chapter_data
+from active_inference.utils import save_chapter_data, save_extra_data
 ```
 
 Also available from the top-level package:
@@ -52,10 +52,14 @@ from active_inference import make_grid, get_logger
 - `save_chapter_data(chapter, stem, arrays, metadata, figures=...)` writes a
   compressed `NPZ` array bundle and paired `JSON` manifest under
   `output/data/chapter_NN/`.
+- `save_extra_data(topic, stem, arrays, metadata, figures=...)` writes the
+  same contract under `output/data/extras/<topic>/`.
 - `extract_figure_data(fig)` and `extract_animation_data(anim)` provide the
   automatic raw-data capture used by shared visualization save helpers.
 - `data_paths_for_figure(path)` maps a saved figure path to its raw-data
   sidecar paths.
+- `data_paths_for_extra_figure(path)` maps `output/figures/extras/<topic>/`
+  artifacts to their `output/data/extras/<topic>/` sidecars.
 
 ## Design Decisions
 
@@ -70,5 +74,6 @@ from active_inference import make_grid, get_logger
 ## Testing
 
 Each module has a dedicated test file under `tests/utils/`:
-`test_grids.py`, `test_io.py`, and `test_logging.py`. The helpers are also
-exercised indirectly through every chapter script and the rest of the suite.
+`test_grids.py`, `test_io.py`, and `test_logging.py`. Export helpers are also
+exercised indirectly through every chapter and extras smoke test plus the
+raw-data validator tests.

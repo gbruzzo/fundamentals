@@ -100,7 +100,9 @@ CHAPTER_4_VISUALIZATIONS = sorted(
 CHAPTER_5_EXAMPLES = sorted(CHAPTER_DIRS[5].glob("example_*.py"))
 CHAPTER_5_ANIMATIONS = sorted(CHAPTER_DIRS[5].glob("animation_*.py"))
 CHAPTER_6_EXAMPLES = sorted(CHAPTER_DIRS[6].glob("example_*.py"))
+CHAPTER_6_VISUALIZATIONS = sorted(CHAPTER_DIRS[6].glob("visualize_*.py"))
 CHAPTER_7_EXAMPLES = sorted(CHAPTER_DIRS[7].glob("example_*.py"))
+CHAPTER_7_ANIMATIONS = sorted(CHAPTER_DIRS[7].glob("animation_*.py"))
 CHAPTER_8_EXAMPLES = sorted(CHAPTER_DIRS[8].glob("example_*.py"))
 CHAPTER_8_ANIMATIONS = sorted(CHAPTER_DIRS[8].glob("animation_*.py"))
 CHAPTER_8_VISUALIZATIONS = sorted(
@@ -197,10 +199,24 @@ def test_chapter_6_scripts_run(script: Path) -> None:
     _run(script, timeout=240)
 
 
+@pytest.mark.parametrize("script", CHAPTER_6_VISUALIZATIONS,
+                         ids=[s.name for s in CHAPTER_6_VISUALIZATIONS])
+def test_chapter_6_visualizations(script: Path) -> None:
+    # Correlated embedding-order precision visualization (§6.6).
+    _run(script, timeout=240)
+
+
 @pytest.mark.parametrize("script", CHAPTER_7_EXAMPLES,
                          ids=[s.name for s in CHAPTER_7_EXAMPLES])
 def test_chapter_7_scripts_run(script: Path) -> None:
     # Active inference: the coupled action-perception loop.
+    _run(script, timeout=240)
+
+
+@pytest.mark.parametrize("script", CHAPTER_7_ANIMATIONS,
+                         ids=[s.name for s in CHAPTER_7_ANIMATIONS])
+def test_chapter_7_animations(script: Path) -> None:
+    # Vector action-perception GIF (§7.5).
     _run(script, timeout=240)
 
 

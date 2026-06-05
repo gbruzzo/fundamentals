@@ -15,6 +15,23 @@ prior plus counts* — so learning reduces to **counting co-occurrences**.
 > against the book's worked Examples 10.1–10.7 plus reduction/self-consistency oracles for the
 > factorial and hierarchical machinery.
 
+## Script inventory
+
+| File | Role |
+|---|---|
+| `example_10_1_learn_D.py` | Dirichlet learning for the initial-state prior `D`. |
+| `example_10_2_learn_A.py` | Dirichlet learning for likelihood matrix `A`. |
+| `example_10_3_learn_B.py` | Dirichlet learning for transition matrix `B`. |
+| `example_10_4_novelty.py` | Parameter-novelty and learning-augmented EFE. |
+| `example_10_5_precision.py` | Habit prior and policy precision sweeps. |
+| `example_10_6_precision_learning.py` | Gamma-prior learning of policy precision. |
+| `example_10_7_two_armed_bandit.py` | Factorial two-armed bandit. |
+| `example_10_8_hierarchical.py` | Hierarchical POMDP depth. |
+| `visualize_factorial_structure.py` | Factorial likelihood structure heatmaps. |
+| `animation_learning.py` | Dirichlet learning animation. |
+| `animation_precision.py` | Policy-precision animation. |
+| `animation_bandit.py` | Two-armed bandit animation. |
+
 ## Parameters become random variables
 
 In Chapter 9 the generative model was `P(o, s, π) = P(π) P(s⁽⁰⁾) Π P(o|s) Π P(s'|s,π)`. Now
@@ -94,6 +111,26 @@ Discrete active inference *with* learning wraps the Chapter-9 planning loop in a
 uniform pseudocounts (knowing nothing about `A`) uses novelty to choose which mappings to
 probe and converges on the true likelihood over trials.
 
+```mermaid
+flowchart LR
+    Counts["Dirichlet counts<br/>a, b, d"]
+    Means["Expected arrays<br/>A, B, D"]
+    Infer["State inference<br/>infer_states or forward_filter"]
+    Score["Learning EFE<br/>risk + ambiguity - novelty"]
+    Act["Select action<br/>policy posterior"]
+    Obs["Observe outcome<br/>o and inferred s"]
+    Acc["Accumulate counts<br/>o times s, s_t times s_prev"]
+
+    Counts --> Means
+    Means --> Infer
+    Infer --> Score
+    Means --> Score
+    Score --> Act
+    Act --> Obs
+    Obs --> Acc
+    Acc --> Counts
+```
+
 ## Habits and policy precision (§10.2)
 
 Chapter 9 set the policy posterior equal to the EFE-derived prior, `Q(π) = σ(−γG)`. §10.2
@@ -142,6 +179,32 @@ A flat POMDP has one hidden-state vector and one observation. Real tasks usually
 A = {A^(0), …, A^(M)}   one likelihood per modality, A^(m): (O_m, C_0, …, C_N)
 B = {B^(0), …, B^(N)}   one transition per state factor, B^(n): (C_n, C_n, U_n)
 C = {C^(0), …, C^(M)}   one preference per modality;  D = {D^(0), …, D^(N)} priors per factor
+```
+
+```mermaid
+flowchart TB
+    F0["State factor 0<br/>context"]
+    F1["State factor 1<br/>choice"]
+    A0["Likelihood modality 0<br/>A^(0) conditioned on all factors"]
+    A1["Likelihood modality 1<br/>A^(1) conditioned on all factors"]
+    O0["Observation modality 0"]
+    O1["Observation modality 1"]
+    MF["Mean-field posterior<br/>Q(s) = product over factors"]
+    EFE["Factorial EFE<br/>sum over modality risk and ambiguity"]
+
+    F0 --> A0
+    F1 --> A0
+    F0 --> A1
+    F1 --> A1
+    A0 --> O0
+    A1 --> O1
+    O0 --> MF
+    O1 --> MF
+    MF --> F0
+    MF --> F1
+    MF --> EFE
+    A0 --> EFE
+    A1 --> EFE
 ```
 
 Each `A^(m)` is conditioned on **all** state factors at once (axis 0 = observation, axes 1.. =

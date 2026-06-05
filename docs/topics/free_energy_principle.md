@@ -142,6 +142,8 @@ agent's instantaneous free-energy contribution.
   minimizes ``F``.
 - [`bayesian_mechanics.md`](bayesian_mechanics.md) — the dynamical
   picture: ``F`` as a Lyapunov function for belief flow.
+- [`thermodynamic_bridge.md`](thermodynamic_bridge.md) — the explicit
+  `U`, `S`, `T`, `H`, and `G` analogy layer used by extras.
 - [`bayesian_inference.md`](bayesian_inference.md) — exact inference,
   the limit of variational inference when ``q`` is unrestricted.
 - [`../statistics/divergences.md`](../statistics/divergences.md),

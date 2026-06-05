@@ -15,18 +15,18 @@ User-facing text menu for `run.sh`. Three rules:
 
 | File         | Role |
 |--------------|------|
-| `runner.py`  | Discovery (`discover_chapters`, `discover_scripts`) and execution (`run_script`, `run_chapter`, `run_all_chapters`). |
+| `runner.py`  | Discovery (`discover_chapters`, `discover_extras`, `discover_scripts`, `discover_extra_scripts`) and execution (`run_script`, `run_chapter`, `run_extra_topic`, `run_all_chapters`, `run_all_extras`). |
 | `tui.py`     | Argparse + interactive loop. `main()` is the entry point. |
 | `__main__.py`| Wires `python -m active_inference.menu`. |
 
-## Adding a new chapter
+## Adding a new chapter or extras topic
 
-Discovery is folder-driven; no code change required. As long as the new
-folder matches `chapters/chapter_<NN>/`, it will appear in the menu
-automatically. Make sure:
+Discovery is folder-driven; no code change required. New chapter folders that
+match `chapters/chapter_<NN>/` and new extras folders under `extras/<topic>/`
+appear in the menu automatically. Make sure:
 
 * New scripts accept `--save` (consistent with the rest of the repo).
-* `tests/chapters/test_smoke.py` picks them up.
+* `tests/chapters/test_smoke.py` or `tests/extras/test_smoke.py` picks them up.
 
 ## Adding a new non-interactive flag
 

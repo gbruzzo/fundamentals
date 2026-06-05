@@ -34,11 +34,12 @@ fundamentals/
 │   ├── chapter_08/            ← learning, attention, and hierarchy (Part II): 2 examples + 1 visualization + 1 animation (§8.1–8.6)
 │   ├── chapter_09/            ← active inference in POMDPs (Part II): 5 examples + 2 animations (§9.1–9.6, discrete)
 │   └── chapter_10/            ← learning & extensions in POMDPs (Part II): 8 examples + 1 visualization + 3 animations (§10.1 Dirichlet A/B/D + novelty, §10.2 habit + precision, §10.3 factorial / two-armed bandit, §10.4 hierarchical)
+├── extras/                    ← cross-cutting topic orchestrators beyond the chapter spine
 ├── docs/                      ← architecture, notation, chapter prose, topic walkthroughs, reference, statistics
 ├── scripts/                   ← batch runners, figure pipeline
 ├── tests/                     ← pytest suite (unit + chapter smoke tests)
-├── output/figures/            ← regenerated PNGs / GIFs per chapter
-└── output/data/               ← regenerated NPZ arrays + JSON metadata per chapter
+├── output/figures/            ← regenerated PNGs / GIFs per chapter and extras topic
+└── output/data/               ← regenerated NPZ arrays + JSON metadata per chapter and extras topic
 ```
 
 ## Install
@@ -85,6 +86,8 @@ web UI sits behind `--web`:
 ./run.sh --list                 # print the discovered menu and exit
 ./run.sh --no-animations        # skip slow GIF renderers
 ./run.sh --keep-going           # continue past failing scripts
+uv run python -m active_inference.menu --extras          # render all extras
+uv run python -m active_inference.menu --extra entropy   # one extras topic
 
 # Local browser interface — one tab per chapter, gallery + render buttons:
 ./run.sh --web                  # default http://127.0.0.1:8765/
@@ -112,14 +115,22 @@ uv run python scripts/run_all_figures.py
 uv run python scripts/run_all_figures.py --chapters 1
 uv run python scripts/run_all_figures.py --chapters 2 --no-animations
 uv run python scripts/run_all_figures.py --chapters 4 --clean
+uv run python scripts/run_all_figures.py --no-chapters --extras entropy expected_free_energy
+uv run python scripts/run_all_figures.py --no-chapters --extras
 uv run python scripts/validate_rendered_figures.py --root output/figures
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+uv run python scripts/validate_raw_data_exports.py --root output/data
+uv run python scripts/validate_book_topic_coverage.py
+uv run python scripts/validate_book_topic_coverage.py --require-rendered
 
 # unit tests
 uv run pytest
 
 # chapter smoke tests only
 uv run pytest tests/chapters -v
+
+# extras smoke tests only
+uv run pytest tests/extras -v
 ```
 
 Each chapter script runs standalone too:
@@ -129,15 +140,17 @@ uv run python chapters/chapter_01/01_box_scenario.py --save
 uv run python chapters/chapter_02/example_2_2_linear_probabilistic.py --save
 uv run python chapters/chapter_03/example_3_5_bayesian_linear_regression.py --save
 uv run python chapters/chapter_02/interactive_explorer.py            # GUI window
+uv run python extras/temperature/visualize_temperature.py --save
 ```
 
 When a non-interactive script is run with `--save`, the saved visual is paired
-with raw data in `output/data/chapter_NN/`: a compressed `NPZ` file for numeric
-arrays and a `JSON` manifest for script provenance, CLI args, seed when present,
-figure paths, array shapes/dtypes, and summary statistics. The shared
+with raw data in `output/data/chapter_NN/` or `output/data/extras/<topic>/`: a
+compressed `NPZ` file for numeric arrays and a `JSON` manifest for script
+provenance, CLI args, seed when present, figure paths, array shapes/dtypes, and
+summary statistics. The shared
 `save_or_show` and `save_animation` helpers export figure/animation data
 automatically; scripts with additional numerical traces can call
-`save_chapter_data` directly. Validate a render with
+`save_chapter_data` or `save_extra_data` directly. Validate a render with
 `scripts/validate_raw_data_exports.py`.
 
 ## What's inside
@@ -154,6 +167,10 @@ automatically; scripts with additional numerical traces can call
 | `core.compose` | `Pipeline` (one-line process + model wiring), `running_stats` / `RunningPosteriorStats` |
 | `core.diagnostics` | `calibration_curve`, `coverage_from_intervals`, `crps_gaussian`, `effective_sample_size`, `gaussian_entropy_*`, `gaussian_kl_*`, `grid_entropy`, `grid_kl_divergence`, `log_score_gaussian`, `logsumexp`, `normal_ci`, `posterior_predictive_check`, `standardize` |
 | `core.posterior` | `Posterior` protocol + `summarize_posterior`, `posterior_mean`, `posterior_std`, `has_*` helpers — works across grid / LGS / BLR posteriors |
+| `core.free_energy_forms` | `FreeEnergyForm`, EFE/FEF/GFE/Bethe/Renyi teaching decompositions, and `free_energy_variant_table` for policy-indexed comparisons |
+| `core.factor_graph` | `normalize_message`, `categorical_factor_message`, `sum_product_chain`, and `variational_message_update` for categorical factor-graph demos |
+| `core.ergodic` | `EntropyBound`, `ergodic_density`, `density_entropy`, `entropy_upper_bound_from_vfe`, and `ergodic_ou_trajectory` for FEP/ergodicity extras |
+| `core.thermodynamics` | `ThermodynamicState`, `canonical_probabilities`, `expected_energy`, `boltzmann_entropy`, `helmholtz_free_energy`, `enthalpy`, `gibbs_free_energy`, `vfe_thermodynamic_state` — explicit FEP thermodynamic bridge |
 | `core.types` | `assert_cov`, `assert_probabilities` — shape / PSD checks |
 | `core.validators` | `require_1d`, `require_2d`, `require_design_matrix`, `require_finite_array`, `require_in_unit_interval`, `require_int_at_least`, `require_monotone`, `require_non_negative_scalar`, `require_positive_scalar`, `require_same_length` |
 | `core.variational` | `GaussianBelief`, `variational_free_energy` → `VFEComponents` (the five VFE forms), `vfe_g_form`/`vfe_d_form`/`vfe_c_form`/`vfe_e_form`/`vfe_map_form`/`vfe_mle_form`, `log_model_evidence`, `surprisal` — Chapter 4 |
@@ -176,7 +193,8 @@ automatically; scripts with additional numerical traces can call
 | `utils.grids` | `make_grid`, `make_2d_grid` |
 | `utils.logging` | `get_logger` — lightweight, consistent logger factory |
 | `utils.io` | `default_figure_dir`, `default_data_dir`, `ensure_dir` |
-| `utils.export` | `save_chapter_data`, `extract_figure_data`, `extract_animation_data`, `data_paths_for_figure`; the NPZ+JSON raw-data contract used by `--save` |
+| `utils.export` | `save_chapter_data`, `save_extra_data`, `extract_figure_data`, `extract_animation_data`, `data_paths_for_figure`, `data_paths_for_extra_figure`; the NPZ+JSON raw-data contract used by `--save` |
+| `extra_topics` | `EXTRA_TOPICS`, `extra_topic_spec`, `extra_topics_by_family`, `build_topic_demo`, `main_visualize`, `main_simulate`, and `main_animation` — registry-driven extras curriculum runners |
 | `visualizations.plotting` | `plot_prior_likelihood_posterior`, `plot_generating_function`, `plot_likelihood_ridge`, `plot_joint_heatmap`, `plot_gradient_descent`, `plot_precision_comparison`, `plot_2d_gaussian`, `confidence_ellipse`, `save_or_show` |
 | `visualizations.interactive` | `interactive_inference`, `interactive_precision` — matplotlib slider widgets, no `ipywidgets` dependency |
 | `visualizations.variational` | `vfe_surface`, `plot_vfe_contour`, `plot_density_evolution`, `plot_vfe_decomposition`, `plot_surprisal_relationship` — Chapter 4 figures |
@@ -184,8 +202,8 @@ automatically; scripts with additional numerical traces can call
 | `visualizations.animations` | `animate_sequential_posterior`, `animate_gradient_descent`, `animate_2d_posterior`, `animate_em_convergence`, `animate_em_steps`, `animate_sufficient_statistics`, `animate_calibration_growth`, `animate_precision_sweep`, `animate_bimodal_emergence`, `animate_lgs_online`, `animate_blr_predictive_band`, `animate_vfe_descent`, `animate_recognition_dynamics`, `animate_hierarchical_pc`, `animate_multivariate_active_inference` (Ch.7 §7.5), `animate_learning_attention` (Ch.8), `animate_parameter_learning` (Ch.10 §10.1), `animate_policy_precision` (Ch.10 §10.2), `animate_two_armed_bandit` (Ch.10 §10.3), `save_animation` |
 | `visualizations.diagnostics` | `plot_calibration`, `plot_cdf_comparison`, `plot_coverage_curve`, `plot_kl_trace`, `plot_posterior_predictive_check`, `plot_qq`, `plot_running_statistics`, `plot_score_trace` |
 | `visualizations.style` | `COLORS` (Okabe-Ito colourblind-safe), `DEFAULT_RC`, `figure_style`, `set_default_style`, `annotate_stat_box`, `annotate_point`, `stat_box_bbox` |
-| `menu` | `discover_chapters`, `discover_scripts`, `run_chapter`, `run_all_chapters`, `run_script`, `main` — stdlib text menu (used by `run.sh`) |
-| `web` | `run_server`, `launch`, `main` — stdlib HTTP server (used by `run.sh --web`); tab-per-chapter UI with figure galleries, render buttons, and inline docs |
+| `menu` | `discover_chapters`, `discover_extras`, `discover_scripts`, `discover_extra_scripts`, `run_chapter`, `run_extra_topic`, `run_all_chapters`, `run_all_extras`, `run_script`, `main` — stdlib text menu (used by `run.sh`) |
+| `web` | `run_server`, `launch`, `main` — stdlib HTTP server (used by `run.sh --web`); tab-per-chapter and tab-per-extra UI with figure galleries, render buttons, and inline docs |
 
 Every public function/class is imported at `src/active_inference/__init__.py`
 and listed in `__all__`. See [`docs/reference/`](docs/reference/) for a
@@ -196,6 +214,24 @@ subpackage-by-subpackage API catalogue.
 Each script is ≤ ~120 lines, imports only from `active_inference` and
 standard library, and follows the same pattern: parse args, build process
 + model, infer, plot, optionally save.
+
+### `extras/` — cross-cutting topic orchestrators
+
+Extras are deterministic topic demos beyond the Chapter 1-10 spine. The
+registry in `active_inference.extra_topics` covers 58 concept-level topics
+across Chapters 1-14 plus the math and free-energy appendices: foundations,
+estimation, information theory, variational inference, predictive coding,
+continuous active inference, discrete POMDPs, Part III extensions, factor
+graphs, applications, ergodic density, and the thermodynamic/FEP bridge.
+
+Each folder has a `README.md`, a `visualize_<topic>.py` static orchestrator,
+and simulation or animation wrappers when the topic benefits from parameter
+sweeps or iterative trajectories. The source-spine audit lives in
+[`docs/reference/book_topic_matrix.md`](docs/reference/book_topic_matrix.md)
+and is checked by `scripts/validate_book_topic_coverage.py`. After rendering,
+`scripts/validate_book_topic_coverage.py --require-rendered` additionally
+requires every declared extras artifact to have matching PNG/GIF output and
+NPZ+JSON raw-data sidecars.
 
 **Chapter 1 — The Hypothesis-Testing Brain** (4 scripts)
 

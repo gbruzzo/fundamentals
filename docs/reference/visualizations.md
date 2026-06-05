@@ -50,6 +50,13 @@ output works with no FFmpeg / ImageMagick install.
 | `animate_gradient_descent(loss_grid, x_grid, history, losses, ...)` | Iterate rolling down the loss curve + sync'd loss trace. |
 | `animate_2d_posterior(means, covs, *, truth=None, prior_mean=None, prior_cov=None, ...)` | 1-/2-σ ellipses tightening over frames. |
 | `animate_em_convergence(log_likelihoods, Theta_history, ...)` | LL curve + heat-map of loadings per iteration. |
+| `animate_em_steps(...)` | Detailed factor-analysis E-step / M-step progression. |
+| `animate_sufficient_statistics(...)` | Running Gaussian sufficient statistics over an observation stream. |
+| `animate_calibration_growth(...)` | Calibration curve filling in as trials accumulate. |
+| `animate_precision_sweep(...)` | Prior/likelihood precision sweep animation. |
+| `animate_bimodal_emergence(...)` | Bi-modal posterior emergence under a non-injective generator. |
+| `animate_lgs_online(...)` | Online Linear Gaussian System posterior animation. |
+| `animate_blr_predictive_band(...)` | Bayesian linear-regression predictive-band animation. |
 | `animate_vfe_descent(x_grid, beliefs, free_energies, *, posterior=None, surprisal=None, ...)` | Ch.4 — `q(x)` tightening onto the posterior while VFE falls to the surprisal bound. |
 | `animate_recognition_dynamics(result, *, truth=None, oracle=None, surprisal=None, label=…, interval_ms=90, stride=1)` | **Composable** Ch.4/Ch.5 descent — duck-typed on `.mus`/`.free_energies`/`.eps_*`; 2 panels for a `FixedFormResult`, 3 for a `PredictiveCodingResult`; moving markers + live stat box. |
 | `animate_hierarchical_pc(result, *, truth=None, interval_ms=60, stride=1)` | Ch.5 §5.4 — layer beliefs, errors → 0, and `Σ F` collapsing (Fig. 5.4.4 in motion). |
@@ -66,6 +73,33 @@ The composable animators mirror the static `unified` plotters: `result` in → a
 out, same palette and bold typography, a legend on every panel, and a `stride` knob to
 keep long-descent GIFs small. They share `_frame_indices` (always renders the final frame).
 
+## `visualizations.variational`
+
+Chapter 4 VFE figures and scalar surfaces.
+
+| Symbol | Role |
+|---|---|
+| `vfe_surface(model, y, x_grid, mus, vars_)` | Evaluate the fixed-form VFE landscape over `(mu, var)`. |
+| `plot_vfe_contour(model, y, x_grid, mus, vars_, ...)` | Contour plot of the VFE surface with optional descent path. |
+| `plot_density_evolution(x_grid, densities, labels=...)` | Overlay variational-density snapshots during optimization. |
+| `plot_vfe_decomposition(components, ...)` | Visualize VFE decomposition terms across a trace. |
+| `plot_surprisal_relationship(...)` | Plot evidence/surprisal relationships for Chapter 4 intuition. |
+
+## `visualizations.diagnostics`
+
+Statistical diagnostic figures used by Chapter 3 and the statistics pages.
+
+| Symbol | Role |
+|---|---|
+| `plot_calibration(curve, ...)` | Reliability diagram for empirical vs nominal coverage. |
+| `plot_cdf_comparison(samples_a, samples_b, ...)` | Empirical CDF comparison figure. |
+| `plot_coverage_curve(levels, coverage, ...)` | Coverage over a sweep of credible masses. |
+| `plot_kl_trace(values, ...)` | Running KL / information-gain trace. |
+| `plot_posterior_predictive_check(check, ...)` | Posterior-predictive replicate histogram with observed statistic. |
+| `plot_qq(samples, reference=...)` | Quantile-quantile diagnostic plot. |
+| `plot_running_statistics(stats, ...)` | Mean/std/KL/log-evidence summaries from `RunningPosteriorStats`. |
+| `plot_score_trace(scores, ...)` | Forecast-score trace over trials. |
+
 ## `visualizations.style`
 
 The shared visual vocabulary every figure routes through (bold, slide-sized
@@ -78,6 +112,7 @@ typography by default; centralized palette and stat-box style).
 | `set_default_style(overrides=None)` / `figure_style(overrides=None)` | Apply (idempotent) or temporarily apply the defaults. |
 | `annotate_stat_box(ax, text, *, loc="upper left", fontsize=12, monospace=True)` | Place a corner statistics readout (monospace so number columns align). |
 | `annotate_point(ax, x, y, text, *, color, dx, dy, marker="o", arrow=True)` | Mark and label an **analytical landmark** (fixed point, oracle, closed-form minimum) with an arrow callout. |
+| `stat_box_bbox()` | Shared rounded-box style for compact numeric annotations. |
 
 ## `visualizations.unified` (Chapters 4–10)
 

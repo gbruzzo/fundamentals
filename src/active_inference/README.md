@@ -64,6 +64,21 @@ catalogue.
 | `posterior_predictive_check` | same | Bayesian p-value with replicated samples. |
 | `standardize` | same | Mean-zero / unit-variance helper. |
 
+### Core — free-energy variants, factor graphs, ergodicity
+
+| Name | Module | Role |
+|---|---|---|
+| `FreeEnergyForm` | `core.free_energy_forms` | Named scalar free-energy total plus additive term dictionary. |
+| `expected_free_energy_form` / `free_energy_of_future` / `generalized_free_energy_form` | same | Pedagogical EFE, FEF, and GFE decompositions. |
+| `observed_predicted_free_energy` / `bethe_free_energy_form` | same | Observed/predicted blend and Bethe-style energy/entropy form. |
+| `renyi_bound` / `renyi_limit_energy` | same | Renyi-style certainty-equivalent energy and its alpha-to-one expected-energy limit. |
+| `free_energy_variant_table` | same | Policy-indexed comparison arrays for EFE/FEF/GFE sweeps. |
+| `normalize_message` / `categorical_factor_message` | `core.factor_graph` | Normalized categorical messages and factor-to-variable sum-product messages. |
+| `sum_product_chain` / `variational_message_update` | same | Forward messages for a categorical chain and VMP-style softmax updates. |
+| `EntropyBound` | `core.ergodic` | Entropy, upper bound, and non-negative residual gap. |
+| `ergodic_density` / `density_entropy` | same | Histogram-based ergodic density and differential entropy on a grid. |
+| `entropy_upper_bound_from_vfe` / `ergodic_ou_trajectory` | same | Entropy-bound residual helper and deterministic OU teaching trajectory. |
+
 ### Core — posterior protocol, validators, types
 
 | Name | Module | Role |
@@ -118,6 +133,10 @@ catalogue.
 | `default_figure_dir` | `utils.io` | Returns `output/figures/`. |
 | `default_data_dir` | `utils.io` | Returns `output/data/`. |
 | `ensure_dir` | `utils.io` | Create directory if missing; return `Path`. |
+| `chapter_data_dir` / `extra_data_dir` | `utils.export` | Resolve chapter and extras raw-data directories. |
+| `infer_chapter_from_path` / `infer_extra_topic_from_path` | `utils.export` | Infer chapter numbers or extras topic slugs from artifact paths. |
+| `save_chapter_data` / `save_extra_data` / `save_figure_data` / `save_animation_data` | `utils.export` | Write paired NPZ+JSON sidecars for saved chapter/extras arrays, figures, and animations. |
+| `extract_figure_data` / `extract_animation_data` / `data_paths_for_figure` / `data_paths_for_extra_figure` | `utils.export` | Extract reconstructable Matplotlib data and map figure paths to raw-data sidecars. |
 
 ### Visualizations
 
@@ -157,9 +176,23 @@ catalogue.
 |---|---|---|
 | `run_menu` | `active_inference` (top-level) | Equivalent to `python -m active_inference.menu`; used by the PEP 621 console script `active-inference-menu`. |
 | `main` | `menu.tui` | Entry point with argparse-driven non-interactive flags. |
-| `discover_chapters` / `discover_scripts` | `menu.runner` | Folder-driven script discovery. |
-| `run_chapter` / `run_all_chapters` / `run_script` | same | Headless execution helpers (set `MPLBACKEND=Agg`). |
-| `ChapterEntry` / `ScriptEntry` | same | Frozen dataclasses describing discovered scripts. |
+| `discover_chapters` / `discover_extras` / `discover_scripts` / `discover_extra_scripts` | `menu.runner` | Folder-driven chapter and extras discovery. |
+| `run_chapter` / `run_extra_topic` / `run_all_chapters` / `run_all_extras` / `run_script` | same | Headless execution helpers (set `MPLBACKEND=Agg`). |
+| `ChapterEntry` / `ExtraTopicEntry` / `ScriptEntry` | same | Frozen dataclasses describing discovered chapters, extras topics, and scripts. |
+
+### Extras Registry
+
+The top-level module `active_inference.extra_topics` powers the repo-root
+`extras/` wrappers and is imported by the menu and web discovery layers. It is
+not re-exported through the top-level package `__all__`; wrapper scripts import
+its runner helpers directly through `active_inference.extra_topics`.
+
+| Name | Module | Role |
+|---|---|---|
+| `ExtraTopicSpec` / `TopicDemo` | `extra_topics` | Frozen metadata and numerical-demo containers for one extras topic. |
+| `EXTRA_TOPICS` / `extra_topic_slugs` / `extra_topic_spec` / `extra_topics_by_family` | same | Registry and lookup helpers shared by docs, tests, menu, and web UI. |
+| `build_topic_demo` / `render_topic_figure` / `build_topic_animation` | same | Deterministic data and artifact builders for extras wrappers. |
+| `main_visualize` / `main_simulate` / `main_animation` / `topic_artifact_path` | same | Thin CLI entry points used by `extras/<topic>/` scripts. |
 
 ### Web
 

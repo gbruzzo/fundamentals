@@ -80,6 +80,30 @@ from .core.distributions import (
     mvn_sample,
     uniform_pdf,
 )
+from .core.ergodic import (
+    EntropyBound,
+    density_entropy,
+    entropy_upper_bound_from_vfe,
+    ergodic_density,
+    ergodic_ou_trajectory,
+)
+from .core.factor_graph import (
+    categorical_factor_message,
+    normalize_message,
+    sum_product_chain,
+    variational_message_update,
+)
+from .core.free_energy_forms import (
+    FreeEnergyForm,
+    bethe_free_energy_form,
+    expected_free_energy_form,
+    free_energy_of_future,
+    free_energy_variant_table,
+    generalized_free_energy_form,
+    observed_predicted_free_energy,
+    renyi_bound,
+    renyi_limit_energy,
+)
 from .core.generative_model import (
     GenerativeModel,
     LinearGaussianModel,
@@ -227,6 +251,16 @@ from .core.posterior import (
     posterior_std,
     summarize_posterior,
 )
+from .core.thermodynamics import (
+    ThermodynamicState,
+    boltzmann_entropy,
+    canonical_probabilities,
+    enthalpy,
+    expected_energy,
+    gibbs_free_energy,
+    helmholtz_free_energy,
+    vfe_thermodynamic_state,
+)
 from .core.types import assert_cov, assert_probabilities
 from .core.validators import (
     require_1d,
@@ -325,15 +359,18 @@ from .estimators.variational import (
 from .utils import (
     chapter_data_dir,
     data_paths_for_figure,
+    data_paths_for_extra_figure,
     default_data_dir,
     default_figure_dir,
     ensure_dir,
+    extra_data_dir,
     extract_animation_data,
     extract_figure_data,
     get_logger,
     make_grid,
     save_animation_data,
     save_chapter_data,
+    save_extra_data,
     save_figure_data,
 )
 
@@ -414,6 +451,15 @@ __all__ = [
     "log_model_evidence",
     "surprisal",
     "free_energy_bound_gap",
+    # Thermodynamic / FEP bridge
+    "ThermodynamicState",
+    "canonical_probabilities",
+    "expected_energy",
+    "boltzmann_entropy",
+    "helmholtz_free_energy",
+    "enthalpy",
+    "gibbs_free_energy",
+    "vfe_thermodynamic_state",
     # Variational inference algorithms (Chapter 4)
     "coordinate_search_vfe",
     "CoordinateSearchResult",
@@ -600,10 +646,13 @@ __all__ = [
     "ensure_dir",
     "chapter_data_dir",
     "data_paths_for_figure",
+    "data_paths_for_extra_figure",
+    "extra_data_dir",
     "extract_animation_data",
     "extract_figure_data",
     "save_animation_data",
     "save_chapter_data",
+    "save_extra_data",
     "save_figure_data",
     "run_menu",
     "run_web",
@@ -634,6 +683,25 @@ __all__ = [
     "ConvergenceReport",
     "oracle_agreement",
     "OracleAgreement",
+    # Part III extras helpers
+    "FreeEnergyForm",
+    "expected_free_energy_form",
+    "free_energy_of_future",
+    "observed_predicted_free_energy",
+    "generalized_free_energy_form",
+    "bethe_free_energy_form",
+    "renyi_bound",
+    "renyi_limit_energy",
+    "free_energy_variant_table",
+    "normalize_message",
+    "categorical_factor_message",
+    "sum_product_chain",
+    "variational_message_update",
+    "EntropyBound",
+    "ergodic_density",
+    "density_entropy",
+    "entropy_upper_bound_from_vfe",
+    "ergodic_ou_trajectory",
     # Posterior protocol
     "Posterior",
     "has_credible_interval",

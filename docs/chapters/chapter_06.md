@@ -11,6 +11,16 @@ simulation in Part II.
 > coordinates of motion + the generalized filter, Example 6.6, Algorithm 6.5.1), and
 > §6.6 (correlated embedding orders + Example 6.7).
 
+## Script inventory
+
+| File | Role |
+|---|---|
+| `example_6_1_generalized_filter.py` | Univariate generalized filtering and the Chapter 6 tracking oracle. |
+| `example_6_2_multivariate_filter.py` | Vector Hooke-oscillator generalized filtering. |
+| `example_6_6_generalized_coordinates.py` | Generalized-coordinate position and velocity tracking. |
+| `example_6_7_multivariate_generalized_coordinates.py` | Vector generalized-coordinate filtering with correlated precision. |
+| `visualize_6_6_correlated_embedding_orders.py` | Precision-matrix heatmaps for correlated embedding orders. |
+
 ## From static predictive coding to a dynamic state-space model
 
 The static prior mean `m_x` of Chapter 5 is replaced by a **state-transition

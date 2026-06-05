@@ -1,7 +1,7 @@
 # `output/figures/` — generated figures
 
-PNG and GIF artifacts produced by the chapter orchestrators when run with
-`--save`. The directory is **fully regenerable** from source.
+PNG and GIF artifacts produced by chapter and extras orchestrators when run
+with `--save`. The directory is **fully regenerable** from source.
 
 ## Subfolders
 
@@ -13,10 +13,11 @@ PNG and GIF artifacts produced by the chapter orchestrators when run with
 | [`chapter_04/`](chapter_04/) | `chapters/chapter_04/*.py --save` | 11 PNGs + 1 GIF for variational inference, VFE forms, and intuition figures. |
 | [`chapter_05/`](chapter_05/) | `chapters/chapter_05/*.py --save` | 5 PNGs + 2 GIFs for predictive coding and hierarchy. |
 | [`chapter_06/`](chapter_06/) | `chapters/chapter_06/*.py --save` | 5 PNGs for generalized filtering, generalized coordinates, and correlated embedding-order precision. |
-| [`chapter_07/`](chapter_07/) | `chapters/chapter_07/*.py --save` | 2 PNGs for active generalized filtering, including the §7.5 vector action-perception loop. |
+| [`chapter_07/`](chapter_07/) | `chapters/chapter_07/*.py --save` | 2 PNGs + 1 GIF for active generalized filtering, including the §7.5 vector action-perception loop. |
 | [`chapter_08/`](chapter_08/) | `chapters/chapter_08/*.py --save` | 3 PNGs + 1 GIF for learning/attention, hierarchy, and message passing. |
 | [`chapter_09/`](chapter_09/) | `chapters/chapter_09/*.py --save` | 5 PNGs + 2 GIFs for discrete POMDP inference, VFE, EFE, Grid World, and exploration. |
 | [`chapter_10/`](chapter_10/) | `chapters/chapter_10/*.py --save` | 9 PNGs + 3 GIFs for POMDP learning, precision, factorial, and hierarchical examples. |
+| [`extras/`](extras/) | `extras/<topic>/*.py --save` | 58 book-grounded extras topics with static PNGs, simulation PNGs, and GIFs when declared by `active_inference.extra_topics`. |
 
 ## Regenerate
 
@@ -32,6 +33,15 @@ python scripts/run_all_figures.py --no-animations
 
 # check rendered artifacts for corrupt, blank, or undersized output
 python scripts/validate_rendered_figures.py --root output/figures
+
+# check extras registry declarations against rendered PNG/GIF and NPZ+JSON artifacts
+python scripts/validate_book_topic_coverage.py --require-rendered
+
+# render all extras through the shared menu runner
+python -m active_inference.menu --extras
+
+# render all extras through the batch renderer
+python scripts/run_all_figures.py --no-chapters --extras
 ```
 
 ## Conventions

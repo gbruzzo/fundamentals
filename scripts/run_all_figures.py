@@ -20,6 +20,12 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from active_inference.menu.runner import discover_extra_scripts, discover_extras  # noqa: E402
+
 CHAPTER_DIRS = {
     1: REPO_ROOT / "chapters" / "chapter_01",
     2: REPO_ROOT / "chapters" / "chapter_02",
@@ -44,6 +50,10 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--chapters", nargs="+", type=int,
                    default=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
                    choices=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    p.add_argument("--extras", nargs="*", default=None,
+                   help="Extras topic slugs to render; pass without values for all extras")
+    p.add_argument("--no-chapters", action="store_true",
+                   help="Skip chapter scripts; useful with --extras for extras-only renders")
     p.add_argument("--clean", action="store_true",
                    help="Delete existing generated figure media and raw data before running")
     p.add_argument("--keep-going", action="store_true",
@@ -98,6 +108,16 @@ def chapter_scripts(ch: int, *, include_animations: bool = True) -> list[Path]:
     return out
 
 
+def extra_scripts(topic: str, *, include_animations: bool = True) -> list[Path]:
+    """Return non-interactive scripts for one extras topic."""
+    entries = discover_extra_scripts(
+        topic,
+        include_animations=include_animations,
+        include_visualizations=True,
+    )
+    return [entry.path for entry in entries]
+
+
 def run(script: Path) -> int:
     """Support this repository command-line validation or rendering script."""
     env = os.environ.copy()
@@ -121,15 +141,33 @@ def main() -> int:
         print(f"Cleaned {removed} generated data files from {DATA_DIR}")
 
     failed: list[Path] = []
-    for ch in args.chapters:
-        print(f"\n=== Chapter {ch} ===")
-        for s in chapter_scripts(ch, include_animations=not args.no_animations):
-            rc = run(s)
-            if rc != 0:
-                failed.append(s)
-                if not args.keep_going:
-                    print(f"X {s.name} failed; aborting (use --keep-going to continue).")
-                    return rc
+    if not args.no_chapters:
+        for ch in args.chapters:
+            print(f"\n=== Chapter {ch} ===")
+            for s in chapter_scripts(ch, include_animations=not args.no_animations):
+                rc = run(s)
+                if rc != 0:
+                    failed.append(s)
+                    if not args.keep_going:
+                        print(f"X {s.name} failed; aborting (use --keep-going to continue).")
+                        return rc
+
+    if args.extras is not None:
+        all_topics = [entry.slug for entry in discover_extras()]
+        requested = all_topics if args.extras == [] else list(args.extras)
+        unknown = sorted(set(requested) - set(all_topics))
+        if unknown:
+            print(f"Unknown extras topics: {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        for topic in requested:
+            print(f"\n=== Extra: {topic} ===")
+            for s in extra_scripts(topic, include_animations=not args.no_animations):
+                rc = run(s)
+                if rc != 0:
+                    failed.append(s)
+                    if not args.keep_going:
+                        print(f"X {s.name} failed; aborting (use --keep-going to continue).")
+                        return rc
 
     if failed:
         print("\nFailed scripts:")

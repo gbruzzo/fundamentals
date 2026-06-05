@@ -12,6 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCAN_ROOTS = (
     REPO_ROOT / "src" / "active_inference",
     REPO_ROOT / "chapters",
+    REPO_ROOT / "extras",
     REPO_ROOT / "scripts",
 )
 PUBLIC_MODULES = (

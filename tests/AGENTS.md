@@ -2,7 +2,8 @@
 
 The test directory **mirrors `src/active_inference/` one-for-one**. Every
 new module under `src/` must get a matching test file under `tests/`. New
-chapter scripts must be registered in `tests/chapters/test_smoke.py`.
+chapter scripts must be registered in `tests/chapters/test_smoke.py`; new
+extras topics must be registered in `tests/extras/test_smoke.py`.
 
 ## Layout invariant
 
@@ -49,6 +50,9 @@ pytest tests/core tests/estimators tests/utils tests/visualizations -q
 
 # full suite incl. chapter smoke tests
 pytest
+
+# extras smoke tests
+pytest tests/extras -v
 
 # coverage
 pytest --cov=active_inference --cov-report=term-missing

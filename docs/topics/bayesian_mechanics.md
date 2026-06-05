@@ -20,16 +20,37 @@ groups:
 
 | Class | Symbol | What it does | This codebase |
 |---|---|---|---|
-| External | ``η`` | true generators of data | the *process* layer (`LinearGaussianProcess`, `LinearGaussianMVProcess`) |
-| Sensory | ``s`` | inputs the agent observes | the ``y`` returned by `process.sample(...)` |
-| Active | ``a`` | outputs that perturb the environment | not a runtime concept yet — see *Limits* below |
-| Internal | ``μ`` | sufficient statistics of the agent's belief | `InferenceResult`, `LGSPosterior`, `BLRPosterior` |
+| External | ``η`` | true generators of data | process/environment state (`LinearGaussianProcess`, `ActiveEnvironment`, POMDP transitions) |
+| Sensory | ``s`` | inputs the agent observes | scalar/vector ``y`` or one-hot categorical ``o`` |
+| Active | ``a`` | outputs that perturb the environment | continuous `actions` in Chapter 7 or discrete policies in Chapters 9-10 |
+| Internal | ``μ`` | sufficient statistics of the agent's belief | `InferenceResult`, generalized-filter beliefs, POMDP posteriors |
 
 The Markov blanket is ``b = (s, a)``: blanket states screen the internal
 states from the external ones, in the sense that
 ``p(η, μ | b) = p(η | b) p(μ | b)``. In code, the package's strict
 process / model split *is* the blanket — the model never reads ``η``
 directly, only ``s = y``.
+
+```mermaid
+flowchart LR
+    subgraph World["External state eta"]
+        GP["Generative process<br/>sample or transition true state"]
+    end
+    subgraph Blanket["Markov blanket b = sensory plus active"]
+        S["Sensory state s<br/>observed y or o"]
+        A["Active state a<br/>continuous action or policy-selected control"]
+    end
+    subgraph Agent["Internal state mu"]
+        M["Generative model<br/>beliefs and sufficient statistics"]
+        F["Free-energy descent<br/>belief update and action selection"]
+    end
+
+    GP --> S
+    S --> M
+    M --> F
+    F --> A
+    A --> GP
+```
 
 ## The density-dynamics picture
 
@@ -54,7 +75,10 @@ equivalent ways:
    `fit_factor_analysis`.
 
 The first is the limit of the second as the step size approaches the
-Newton step. Both achieve the same minimum of ``F``.
+Newton step. Both achieve the same minimum of ``F``. In the active
+examples, the same descent view extends to action: Chapter 7 updates
+``a`` through the sensory channel, while Chapters 9-10 evaluate policy
+trajectories by expected free energy.
 
 ## Worked example: a tiny Bayesian-mechanics loop
 
@@ -96,17 +120,12 @@ point.
 
 | Bayesian-mechanics concept | Identifier | Use it for |
 |---|---|---|
-| External / sensory split | `LinearGaussianProcess` ↔ `LinearGaussianModel` | enforce the blanket statically |
-| Internal sufficient statistics | `InferenceResult.{posterior, posterior_mean, posterior_variance}` | track ``μ_t`` |
-| Step-by-step internal flow | `core.compose.running_stats` | the trajectory of ``μ`` over time |
-| Free-energy proxy ``ΔF`` | `gaussian_kl_univariate`, `gaussian_kl_mvn` | ``KL[q_t ‖ q_{t−1}]`` per step |
-| Long-run uncertainty | `InferenceResult.entropy()`, `gaussian_entropy_*` | settled-state entropy = ergodic uncertainty |
-
-A fully-fledged Bayesian-mechanics simulation would also need an action
-flow ``da/dt`` minimizing the *expected* free energy of next observations.
-The package keeps the perception side fully implemented and leaves
-action as a planned extension; for now, varying the number of samples
-``n`` per call to `Pipeline.run` is the simplest stand-in.
+| External / sensory split | process/environment classes ↔ model/agent classes | keep world dynamics separate from beliefs |
+| Internal sufficient statistics | `InferenceResult`, generalized-filter result traces, POMDP beliefs | track ``μ_t`` or ``s_t`` |
+| Step-by-step internal flow | `running_stats`, `generalized_filter`, `simulate_active_inference` | trajectories of beliefs over time |
+| Free-energy proxy ``ΔF`` | `gaussian_kl_univariate`, `gaussian_kl_mvn`, VFE traces | ``KL[q_t ‖ q_{t−1}]`` or explicit free-energy descent |
+| Action / policy flow | `action_gradient`, `multivariate_action_gradient`, `policy_posterior` | perturb the environment or select policies by free energy |
+| Long-run uncertainty | `InferenceResult.entropy()`, `gaussian_entropy_*`, categorical EFE terms | settled-state uncertainty and policy value |
 
 ## Convergence diagnostics
 
@@ -133,10 +152,10 @@ Both traces are returned by `running_stats`, animated by
 - **The flow analogy is local.** Closed-form Gaussian updates are
   one-shot; the gradient-descent picture is only literal for non-Gaussian
   problems where the analytic posterior is unavailable.
-- **Stationarity assumes the true state is fixed.** When ``η`` itself
-  drifts, the agent's running statistics need to *forget* old data —
-  out of scope for the current package, but a natural Chapter 6/7
-  extension.
+- **Stationarity depends on the example.** Part-I running statistics
+  assume a fixed true state. Chapters 6-8 handle drifting continuous
+  states with online generalized filtering; use those APIs instead of
+  accumulating all past samples when the world is moving.
 - **One agent ≠ many agents.** Multi-agent Bayesian mechanics requires
   cross-agent blankets and a notion of joint free energy. Not in scope
   for this companion.

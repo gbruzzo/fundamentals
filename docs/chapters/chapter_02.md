@@ -36,6 +36,8 @@ scripts simply parameterize them differently.
 | `example_2_9_map_analytic.py`         | What is the closed-form MAP, and how does it move with `s2_x`? |
 | `example_2_10_gradient_descent.py`    | Can we recover the same answers iteratively? |
 | `visualize_generative_model.py`       | What does the joint `p(x, y)` look like as a heatmap and surface? |
+| `animation_sequential.py`             | How does the posterior tighten as observations accumulate? |
+| `animation_gradient_descent.py`       | How do the MLE/MAP iterates roll down the objective? |
 | `interactive_explorer.py`             | Drag-and-drop exploration with sliders. |
 
 ## Reusable building blocks

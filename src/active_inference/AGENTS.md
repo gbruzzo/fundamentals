@@ -7,7 +7,7 @@ subpackages, each with a clear role and a strict dependency direction.
 ## Layered subpackages
 
 ```
-chapters/  ──── thin orchestrators (not in this folder)
+chapters/ and extras/  ──── thin orchestrators (not in this folder)
                           │
        ┌──────────────────┼──────────────────┐
        ▼                                     ▼
@@ -18,17 +18,18 @@ menu/  ─── stdlib text menu             web/  ─── stdlib local web U
 visualizations/  ─── matplotlib helpers, GIF animations, sliders, diagnostic plots, style
                           │
                           ▼
-estimators/      ─── MLE, MAP, GD, BLR, EM
+estimators/      ─── MLE, MAP, GD, BLR, EM, simulations
                           │
                           ▼
-core/            ─── distributions, gen-process/model, exact inference, LGS, diagnostics, composition, validators
+core/            ─── distributions, gen-process/model, exact inference, LGS, diagnostics, VFE, thermodynamics, POMDPs
                           │
                           ▼
-utils/           ─── grids, paths, logger
+utils/           ─── grids, paths, logger, NPZ+JSON export
 ```
 
 Both `menu/` and `web/` consume the same discovery layer
-(`menu/runner.py`) — adding a chapter or script wires both UIs at once.
+(`menu/runner.py`) — adding a chapter, extras topic, or script wires both UIs
+at once.
 
 Higher layers may import from lower layers; the reverse is forbidden.
 This is enforced by convention only — there is no import-linter, but
@@ -44,7 +45,7 @@ orchestrators can `from active_inference import …`. The rules:
 2. **Anything not in `__all__` is internal** — chapter scripts must not
    import it.
 3. New public symbols require an update to `__all__`, the relevant
-   `docs/<module>.md`, and a unit test in `tests/<module>/`.
+   `docs/reference/<sub>.md`, and a unit test in `tests/<sub>/`.
 
 ## When to add a new subpackage
 
@@ -55,8 +56,13 @@ book's structure (data + densities → estimation → results → visualization
 - A new module inside an existing subpackage, or
 - A new top-level helper file pulled into one of the existing folders.
 
-`menu/` and `web/` are strict UI layers: stdlib-only, no domain
-imports. Keep numerical code out of them.
+`extra_topics.py` is a top-level registry and runner module for the
+repo-root `extras/` wrappers. Keep new reusable numerical logic in `core/`,
+`estimators/`, or `visualizations/`; the registry should assemble small,
+deterministic teaching datasets and call public lower-layer APIs.
+
+`menu/` and `web/` are strict UI layers: stdlib-only, no domain imports. Keep
+numerical code out of them.
 
 ## Conventions
 
@@ -81,6 +87,7 @@ tests/visualizations/ ←→  src/active_inference/visualizations/
 tests/menu/           ←→  src/active_inference/menu/    (smoke + discovery)
 tests/web/            ←→  src/active_inference/web/     (in-process HTTP smoke)
 tests/chapters/       ←→  chapters/  (subprocess smoke tests)
+tests/extras/         ←→  extras/    (subprocess smoke tests)
 ```
 
 Coverage targets: 90%+ for `core/` and `estimators/`; 80%+ for

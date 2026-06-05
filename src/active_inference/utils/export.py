@@ -25,6 +25,7 @@ from .io import default_data_dir
 ArrayMap = Mapping[str, Any]
 
 _CHAPTER_RE = re.compile(r"chapter_(\d{2})")
+_EXTRAS_RE = re.compile(r"extras")
 _SAFE_NAME_RE = re.compile(r"[^0-9A-Za-z_]+")
 _SKIP_CLOSURE_NAMES = {
     "ax",
@@ -157,6 +158,20 @@ def chapter_data_dir(chapter: int | str, *, root: Path | str | None = None) -> P
     return base / f"chapter_{number:02d}"
 
 
+def _extra_topic(topic: str) -> str:
+    """Return a stable extras topic directory name."""
+    safe = _sanitize_name(topic)
+    if not safe:
+        raise ValueError("topic must not be empty")
+    return safe
+
+
+def extra_data_dir(topic: str, *, root: Path | str | None = None) -> Path:
+    """Return the raw-data directory for one extras topic under ``output/data``."""
+    base = Path(root) if root is not None else default_data_dir()
+    return base / "extras" / _extra_topic(topic)
+
+
 def infer_chapter_from_path(path: Path | str) -> int:
     """Infer ``NN`` from a path containing a ``chapter_NN`` component."""
     for part in Path(path).parts:
@@ -164,6 +179,15 @@ def infer_chapter_from_path(path: Path | str) -> int:
         if match:
             return int(match.group(1))
     raise ValueError(f"could not infer chapter_NN from {path!s}")
+
+
+def infer_extra_topic_from_path(path: Path | str) -> str:
+    """Infer the extras topic slug from a path containing ``extras/<topic>``."""
+    parts = Path(path).parts
+    for index, part in enumerate(parts[:-1]):
+        if _EXTRAS_RE.fullmatch(part):
+            return _extra_topic(parts[index + 1])
+    raise ValueError(f"could not infer extras/<topic> from {path!s}")
 
 
 def data_paths_for_figure(
@@ -177,6 +201,66 @@ def data_paths_for_figure(
     stem = figure.stem
     data_dir = chapter_data_dir(chapter, root=root)
     return data_dir / f"{stem}.npz", data_dir / f"{stem}.json"
+
+
+def data_paths_for_extra_figure(
+    figure_path: Path | str,
+    *,
+    root: Path | str | None = None,
+) -> tuple[Path, Path]:
+    """Return NPZ/JSON sidecars for a figure under ``output/figures/extras``."""
+    figure = Path(figure_path)
+    topic = infer_extra_topic_from_path(figure)
+    stem = figure.stem
+    data_dir = extra_data_dir(topic, root=root)
+    return data_dir / f"{stem}.npz", data_dir / f"{stem}.json"
+
+
+def _write_data_pair(
+    data_dir: Path,
+    stem: str,
+    arrays: ArrayMap,
+    metadata: Mapping[str, Any] | None,
+    *,
+    figures: Sequence[Path | str] | None = None,
+    manifest_fields: Mapping[str, Any],
+) -> tuple[Path, Path]:
+    """Write validated arrays and a JSON manifest to ``data_dir``."""
+    prepared = _prepare_arrays(arrays)
+    metadata_dict = dict(metadata or {})
+    data_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_stem = _sanitize_name(stem)
+    npz_path = data_dir / f"{safe_stem}.npz"
+    json_path = data_dir / f"{safe_stem}.json"
+    np.savez_compressed(npz_path, **prepared)
+
+    argv = list(sys.argv[1:])
+    seed = metadata_dict.get("seed")
+    if seed is None:
+        seed = _seed_from_argv(argv)
+    summary = {name: _array_summary(arr) for name, arr in prepared.items()}
+    manifest = {
+        "schema_version": 1,
+        **_jsonable(manifest_fields),
+        "stem": safe_stem,
+        "script": metadata_dict.get("script", Path(sys.argv[0]).name),
+        "args": metadata_dict.get("args", argv),
+        "seed": seed,
+        "figures": [_display_path(path) for path in (figures or [])],
+        "arrays": {
+            name: {
+                "shape": list(arr.shape),
+                "dtype": str(arr.dtype),
+                "summary": summary[name],
+            }
+            for name, arr in prepared.items()
+        },
+        "summary": summary,
+        "metadata": _jsonable(metadata_dict),
+    }
+    json_path.write_text(json.dumps(_jsonable(manifest), indent=2, sort_keys=True), encoding="utf-8")
+    return npz_path, json_path
 
 
 def save_chapter_data(
@@ -196,42 +280,35 @@ def save_chapter_data(
     quantities visible in the figure are machine-readable.
     """
     number = _chapter_number(chapter)
-    prepared = _prepare_arrays(arrays)
-    metadata_dict = dict(metadata or {})
-    data_dir = chapter_data_dir(number, root=root)
-    data_dir.mkdir(parents=True, exist_ok=True)
+    return _write_data_pair(
+        chapter_data_dir(number, root=root),
+        stem,
+        arrays,
+        metadata,
+        figures=figures,
+        manifest_fields={"chapter": number},
+    )
 
-    safe_stem = _sanitize_name(stem)
-    npz_path = data_dir / f"{safe_stem}.npz"
-    json_path = data_dir / f"{safe_stem}.json"
-    np.savez_compressed(npz_path, **prepared)
 
-    argv = list(sys.argv[1:])
-    seed = metadata_dict.get("seed")
-    if seed is None:
-        seed = _seed_from_argv(argv)
-    summary = {name: _array_summary(arr) for name, arr in prepared.items()}
-    manifest = {
-        "schema_version": 1,
-        "chapter": number,
-        "stem": safe_stem,
-        "script": metadata_dict.get("script", Path(sys.argv[0]).name),
-        "args": metadata_dict.get("args", argv),
-        "seed": seed,
-        "figures": [_display_path(path) for path in (figures or [])],
-        "arrays": {
-            name: {
-                "shape": list(arr.shape),
-                "dtype": str(arr.dtype),
-                "summary": summary[name],
-            }
-            for name, arr in prepared.items()
-        },
-        "summary": summary,
-        "metadata": _jsonable(metadata_dict),
-    }
-    json_path.write_text(json.dumps(_jsonable(manifest), indent=2, sort_keys=True), encoding="utf-8")
-    return npz_path, json_path
+def save_extra_data(
+    topic: str,
+    stem: str,
+    arrays: ArrayMap,
+    metadata: Mapping[str, Any] | None = None,
+    *,
+    figures: Sequence[Path | str] | None = None,
+    root: Path | str | None = None,
+) -> tuple[Path, Path]:
+    """Write validated extras-topic arrays to ``.npz`` plus a JSON manifest."""
+    safe_topic = _extra_topic(topic)
+    return _write_data_pair(
+        extra_data_dir(safe_topic, root=root),
+        stem,
+        arrays,
+        metadata,
+        figures=figures,
+        manifest_fields={"section": "extras", "topic": safe_topic},
+    )
 
 
 def _add_array_if_valid(arrays: dict[str, np.ndarray], name: str, value: Any) -> None:
@@ -370,10 +447,16 @@ def save_figure_data(
     figure_path: Path | str,
     metadata: Mapping[str, Any] | None = None,
 ) -> tuple[Path, Path] | None:
-    """Save figure-extracted raw data for paths under ``output/figures/chapter_NN``."""
+    """Save figure-extracted raw data for chapter or extras figure paths."""
     try:
         chapter = infer_chapter_from_path(figure_path)
     except ValueError:
+        chapter = None
+    try:
+        topic = infer_extra_topic_from_path(figure_path) if chapter is None else None
+    except ValueError:
+        topic = None
+    if chapter is None and topic is None:
         return None
     arrays, figure_metadata = extract_figure_data(fig)
     export_metadata = {
@@ -381,6 +464,14 @@ def save_figure_data(
         "figure_metadata": figure_metadata,
         **dict(metadata or {}),
     }
+    if chapter is None and topic is not None:
+        return save_extra_data(
+            topic,
+            Path(figure_path).stem,
+            arrays,
+            export_metadata,
+            figures=[figure_path],
+        )
     return save_chapter_data(
         chapter,
         Path(figure_path).stem,
@@ -395,10 +486,16 @@ def save_animation_data(
     animation_path: Path | str,
     metadata: Mapping[str, Any] | None = None,
 ) -> tuple[Path, Path] | None:
-    """Save animation-extracted raw data for paths under ``output/figures/chapter_NN``."""
+    """Save animation-extracted raw data for chapter or extras animation paths."""
     try:
         chapter = infer_chapter_from_path(animation_path)
     except ValueError:
+        chapter = None
+    try:
+        topic = infer_extra_topic_from_path(animation_path) if chapter is None else None
+    except ValueError:
+        topic = None
+    if chapter is None and topic is None:
         return None
     arrays, animation_metadata = extract_animation_data(anim)
     export_metadata = {
@@ -406,6 +503,14 @@ def save_animation_data(
         "animation_metadata": animation_metadata,
         **dict(metadata or {}),
     }
+    if chapter is None and topic is not None:
+        return save_extra_data(
+            topic,
+            Path(animation_path).stem,
+            arrays,
+            export_metadata,
+            figures=[animation_path],
+        )
     return save_chapter_data(
         chapter,
         Path(animation_path).stem,

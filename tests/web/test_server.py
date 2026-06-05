@@ -16,6 +16,7 @@ import pytest
 
 from active_inference.web import server as web_server
 from active_inference.web.templates import CSS, JS, render_index_html
+from active_inference.extra_topics import extra_topic_slugs
 
 
 @pytest.fixture(scope="module")
@@ -83,6 +84,10 @@ class TestRoutes:
         data = json.loads(body)
         numbers = sorted(c["number"] for c in data["chapters"])
         assert numbers[:3] == [1, 2, 3]
+        extra_slugs = {e["slug"] for e in data["extras"]}
+        assert "entropy" in extra_slugs
+        assert "variational_free_energy" in extra_slugs
+        assert set(extra_topic_slugs()).issubset(extra_slugs)
         # Doc pages should at least include the architecture / cookbook entries.
         titles = {d["title"] for d in data["docs"]}
         assert "Architecture" in titles
@@ -97,6 +102,19 @@ class TestRoutes:
         assert "01_box_scenario.py" in names
         assert isinstance(data["figures"], list)
         assert isinstance(data["docs"], list)
+
+    def test_extra_payload_shape(self, server):
+        status, _, body = _get(server, "/api/extra/entropy")
+        assert status == 200
+        data = json.loads(body)
+        assert data["slug"] == "entropy"
+        assert data["family"] == "Information And Variational Inference"
+        assert data["sections"]
+        names = {s["name"] for s in data["scripts"]}
+        assert "visualize_entropy.py" in names
+        assert "simulate_entropy.py" in names
+        assert isinstance(data["figures"], list)
+        assert data["readme_html"]
 
     def test_unknown_chapter_returns_500(self, server):
         with pytest.raises(HTTPError) as exc:
@@ -177,6 +195,12 @@ class TestRunEndpoint:
         assert status == 200
         assert data["returncode"] == 0
 
+    def test_run_extra_script(self, server):
+        status, data = _post(server, "/api/run",
+                             {"topic": "entropy", "script": "visualize_entropy.py"})
+        assert status == 200
+        assert data["returncode"] == 0
+
 
 class TestTemplates:
     def test_render_index_html_substitutes(self):
@@ -233,6 +257,11 @@ class TestEnrichedMetadata:
         assert ch1["kind_counts"]["concept"] == 4
         assert ch1["figure_count"] >= 0
         assert "repo" in data
+        entropy = next(e for e in data["extras"] if e["slug"] == "entropy")
+        assert entropy["kind_counts"]["visualize"] == 1
+        assert entropy["kind_counts"]["simulate"] == 1
+        assert entropy["family"] == "Information And Variational Inference"
+        assert entropy["figure_count"] >= 0
 
     def test_script_meta_keys(self, server):
         status, _, body = _get(server, "/api/chapter/2")

@@ -42,14 +42,18 @@ from urllib.parse import unquote, urlparse
 
 from ..menu.runner import (
     CHAPTER_DIRS,
+    EXTRA_TOPIC_DIRS,
     OUTPUT_DIR,
     REPO_ROOT,
     ScriptEntry,
     _build_env,
     discover_chapters,
+    discover_extra_scripts,
+    discover_extras,
     discover_scripts,
     run_script,
 )
+from ..extra_topics import extra_topic_spec
 from .templates import CSS, FAVICON_SVG, JS, render_index_html
 
 LOG = logging.getLogger("active_inference.web")
@@ -68,6 +72,11 @@ DOCS_DIR = REPO_ROOT / "docs"
 def _chapter_figure_dir(chapter: int) -> Path:
     """Return chapter-specific metadata used for discovery and display."""
     return OUTPUT_DIR / f"chapter_{chapter:02d}"
+
+
+def _extra_figure_dir(topic: str) -> Path:
+    """Return extras-topic figure directory used for discovery and display."""
+    return OUTPUT_DIR / "extras" / topic
 
 
 _DOC_SUMMARY_LIMIT = 220
@@ -100,6 +109,56 @@ def _list_figures(chapter: int) -> list[dict[str, Any]]:
             "generated_by": _guess_generator(p, chapter),
         })
     return out
+
+
+def _list_extra_figures(topic: str) -> list[dict[str, Any]]:
+    """List rendered figure files for one extras topic."""
+    base = _extra_figure_dir(topic)
+    if not base.is_dir():
+        return []
+    out: list[dict[str, Any]] = []
+    for p in sorted(base.iterdir()):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".png", ".gif", ".jpg", ".jpeg", ".webp", ".svg"}:
+            continue
+        stat = p.stat()
+        width, height = _image_dimensions(p)
+        out.append({
+            "name": p.name,
+            "url": f"/figures/extras/{topic}/{p.name}",
+            "kind": "animation" if p.suffix.lower() == ".gif" else "static",
+            "extension": p.suffix.lower().lstrip("."),
+            "size": stat.st_size,
+            "size_human": _human_bytes(stat.st_size),
+            "mtime": stat.st_mtime,
+            "mtime_human": _human_time(stat.st_mtime),
+            "width": width,
+            "height": height,
+            "generated_by": _guess_extra_generator(p, topic),
+        })
+    return out
+
+
+def _extra_registry_payload(topic: str) -> dict[str, Any]:
+    """Return registry metadata for one extras topic."""
+    try:
+        spec = extra_topic_spec(topic)
+    except KeyError:
+        return {
+            "title": topic.replace("_", " ").title(),
+            "family": "Extras",
+            "summary": "Extras topic",
+            "chapters": [],
+            "sections": [],
+        }
+    return {
+        "title": spec.title,
+        "family": spec.family,
+        "summary": spec.summary,
+        "chapters": list(spec.chapters),
+        "sections": list(spec.sections),
+    }
 
 
 def _script_meta(entry: ScriptEntry) -> dict[str, Any]:
@@ -170,6 +229,23 @@ def _guess_generator(figure: Path, chapter: int) -> str | None:
     if stem in scripts:
         return f"{stem}.py"
     # Strip trailing suffixes like "_posterior", "_curve" until we hit a script stem.
+    parts = stem.split("_")
+    for i in range(len(parts), 0, -1):
+        candidate = "_".join(parts[:i])
+        if candidate in scripts:
+            return f"{candidate}.py"
+    return None
+
+
+def _guess_extra_generator(figure: Path, topic: str) -> str | None:
+    """Best-effort match of an extras figure file back to its script."""
+    stem = figure.stem
+    base = EXTRA_TOPIC_DIRS.get(topic)
+    if base is None:
+        return None
+    scripts = [p.stem for p in base.glob("*.py")]
+    if stem in scripts:
+        return f"{stem}.py"
     parts = stem.split("_")
     for i in range(len(parts), 0, -1):
         candidate = "_".join(parts[:i])
@@ -569,9 +645,17 @@ class _Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/api/chapter/(\d+)$", path)
             if m:
                 return self._send_json(self._chapter_payload(int(m.group(1))))
+            m = re.match(r"^/api/extra/([a-z0-9_]+)$", path)
+            if m:
+                return self._send_json(self._extra_payload(m.group(1)))
             m = re.match(r"^/api/doc/(.+)$", path)
             if m:
                 return self._send_json(self._doc_payload(unquote(m.group(1))))
+            m = re.match(r"^/figures/extras/([a-z0-9_]+)/(.+)$", path)
+            if m:
+                topic = m.group(1)
+                name = unquote(m.group(2))
+                return self._serve_static_file(_extra_figure_dir(topic), name)
             m = re.match(r"^/figures/(\d{2})/(.+)$", path)
             if m:
                 chapter = int(m.group(1))
@@ -621,8 +705,29 @@ class _Handler(BaseHTTPRequestHandler):
                 "figure_count": len(figures),
                 "subtitle": _chapter_subtitle(entry.number),
             })
+        extras = []
+        for entry in discover_extras():
+            scripts = entry.scripts
+            kind_counts: dict[str, int] = {}
+            for s in scripts:
+                kind_counts[s.kind] = kind_counts.get(s.kind, 0) + 1
+            figures = _list_extra_figures(entry.slug)
+            extras.append({
+                "slug": entry.slug,
+                "title": entry.title,
+                "relative": entry.relative,
+                "scripts": [_script_meta(s) for s in scripts],
+                "kind_counts": kind_counts,
+                "figure_count": len(figures),
+                "subtitle": entry.family,
+                "family": entry.family,
+                "summary": entry.summary,
+                "chapters": list(entry.chapters),
+                "sections": list(entry.sections),
+            })
         return {
             "chapters": chapters,
+            "extras": extras,
             "docs": _list_doc_pages(),
             "repo": str(REPO_ROOT),
         }
@@ -649,6 +754,30 @@ class _Handler(BaseHTTPRequestHandler):
             if readme_path.is_file() else None,
         }
 
+    def _extra_payload(self, topic: str) -> dict[str, Any]:
+        """Return extras-topic metadata used for discovery and display."""
+        if topic not in EXTRA_TOPIC_DIRS:
+            raise ValueError(f"Unknown extras topic {topic!r}")
+        scripts = discover_extra_scripts(topic, include_interactive=True)
+        topic_dir = EXTRA_TOPIC_DIRS[topic]
+        readme_path = topic_dir / "README.md"
+        registry = _extra_registry_payload(topic)
+        return {
+            "slug": topic,
+            "title": registry["title"],
+            "subtitle": registry["family"],
+            "relative": str(topic_dir.relative_to(REPO_ROOT)),
+            "scripts": [_script_meta(s) for s in scripts],
+            "figures": _list_extra_figures(topic),
+            "docs": [],
+            **registry,
+            "readme_html": _md_to_html(readme_path.read_text(encoding="utf-8",
+                                                              errors="replace"))
+            if readme_path.is_file() else None,
+            "readme_source": str(readme_path.relative_to(REPO_ROOT))
+            if readme_path.is_file() else None,
+        }
+
     def _doc_payload(self, doc_id: str) -> dict[str, Any]:
         """Return documentation metadata used by the local browser UI."""
         rel = doc_id.replace("__", "/")
@@ -664,8 +793,26 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _run_payload(self, data: dict[str, Any]) -> dict[str, Any]:
         """Support request handling for the local chapter browser UI."""
-        chapter = int(data.get("chapter", 0))
         name = str(data.get("script", "")).strip()
+        topic = str(data.get("topic", "")).strip()
+        if topic:
+            if topic not in EXTRA_TOPIC_DIRS:
+                raise ValueError(f"Unknown extras topic {topic!r}")
+            scripts = discover_extra_scripts(topic, include_interactive=True)
+            match = next((s for s in scripts if s.name == name), None)
+            if match is None:
+                raise ValueError(f"Unknown script {name!r}")
+            if match.kind == "interactive":
+                raise ValueError("Interactive scripts must be launched via "
+                                 "/api/launch-interactive, not /api/run")
+            completed = run_script(match, save=True, capture_output=True,
+                                   timeout=300, quiet=True)
+            return {
+                "returncode": completed.returncode,
+                "stdout_tail": (completed.stdout or "").splitlines()[-25:],
+                "stderr_tail": (completed.stderr or "").splitlines()[-25:],
+            }
+        chapter = int(data.get("chapter", 0))
         if chapter not in CHAPTER_DIRS:
             raise ValueError(f"Unknown chapter {chapter!r}")
         scripts = discover_scripts(chapter, include_interactive=True)
@@ -695,6 +842,14 @@ class _Handler(BaseHTTPRequestHandler):
                     break
             if match is not None:
                 break
+        if match is None:
+            for topic in EXTRA_TOPIC_DIRS:
+                for s in discover_extra_scripts(topic, include_interactive=True):
+                    if s.name == name and s.kind == "interactive":
+                        match = s
+                        break
+                if match is not None:
+                    break
         if match is None:
             raise ValueError(f"Unknown interactive script {name!r}")
         env = _build_env()

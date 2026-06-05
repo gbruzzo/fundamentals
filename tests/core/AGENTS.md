@@ -17,6 +17,7 @@ The one allowed exception is `core/distributions.py`, which is split into
    - new multivariate helper → `test_distributions_mvn.py`,
    - new generative process / model → matching `test_*` file,
    - new inference engine → its own file (e.g., `test_kalman.py`).
+   - new thermodynamic/FEP bridge helper → `test_thermodynamics.py`.
 2. Cover at least:
    - happy-path against a hand-computed value;
    - normalization / determinism property;

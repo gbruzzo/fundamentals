@@ -13,8 +13,12 @@ own file.
 | `core/inference.py` | [`test_inference.py`](test_inference.py) |
 | `core/lgs.py` | [`test_lgs.py`](test_lgs.py) |
 | `core/variational.py` (Ch.4) | [`test_variational.py`](test_variational.py) |
+| `core/thermodynamics.py` | [`test_thermodynamics.py`](test_thermodynamics.py) |
 | `core/predictive_coding.py` (Ch.5) | [`test_predictive_coding.py`](test_predictive_coding.py) |
 | `core/diagnostics.py` | [`test_diagnostics.py`](test_diagnostics.py) |
+| `core/free_energy_forms.py` | [`test_free_energy_forms.py`](test_free_energy_forms.py) |
+| `core/factor_graph.py` | [`test_factor_graph.py`](test_factor_graph.py) |
+| `core/ergodic.py` | [`test_ergodic.py`](test_ergodic.py) |
 | `core/compose.py` | [`test_compose.py`](test_compose.py) |
 | `core/posterior.py` | [`test_posterior.py`](test_posterior.py) |
 | `core/validators.py` | [`test_validators.py`](test_validators.py) |
@@ -40,8 +44,12 @@ pytest tests/core/test_lgs.py -v
 - `LinearGaussianSystem.posterior_batch` recovers the truth as N grows.
 - Variational free energy's five forms agree and the bound `𝓕 ≥ −log p(y)`
   holds, tight at the posterior (Ch.4).
+- Thermodynamic bridge helpers validate canonical probabilities, entropy,
+  free-energy potentials, and the `T=1,pV=0` equality with VFE.
 - Predictive coding's analytic gradient matches finite differences and its
   linear fixed point equals the grid posterior mean (Ch.5).
+- Free-energy form helpers, factor-graph message updates, and ergodic-density
+  helpers validate algebraic decompositions, normalization, and error handling.
 - Diagnostics (calibration, CRPS, KL/entropy, `gradient_check`,
   `convergence_report`, `oracle_agreement`), compose pipelines, the posterior
   protocol, validators, and type asserts.

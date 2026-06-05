@@ -13,6 +13,18 @@ matrices, and exact in the static case.
 > agent, and the exploration/exploitation decomposition (verified against Eq. 63/68 and a
 > behavioral goal-reaching oracle).
 
+## Script inventory
+
+| File | Role |
+|---|---|
+| `example_9_1_state_inference.py` | Static categorical hidden-state inference. |
+| `example_9_2_dynamic_filtering.py` | HMM-style forward filtering and per-step discrete VFE. |
+| `example_9_3_discrete_vfe.py` | Two-state VFE simplex and surprisal bound. |
+| `example_9_4_gridworld.py` | Policy planning in Grid World by expected free energy. |
+| `example_9_6_exploration_exploitation.py` | Risk/ambiguity decomposition for policy selection. |
+| `animation_belief_filtering.py` | Belief-filtering animation. |
+| `animation_efe_tradeoff.py` | Exploration/exploitation trade-off animation. |
+
 ## The model is a handful of matrices
 
 | Matrix | Shape | Meaning |
@@ -25,6 +37,31 @@ matrices, and exact in the static case.
 
 The static generative model (§9.1) is just `M = {A, D}`, factorizing the joint as
 `P(s, o) = P(o|s)·P(s)`. (`B` adds dynamics in §9.2; `C`/`E` enter with action in §9.5.)
+
+```mermaid
+flowchart TB
+    D["D<br/>state prior"]
+    A["A<br/>likelihood P(o|s)"]
+    B["B<br/>transition P(s'|s,u)"]
+    C["C<br/>observation preferences"]
+    S["Belief s<br/>infer_states or forward_filter"]
+    P["Policies pi<br/>action sequences"]
+    G["Expected free energy G<br/>risk + ambiguity"]
+    Q["Policy posterior Q(pi)<br/>softmax(-gamma G)"]
+    U["Current action u<br/>action_posterior"]
+
+    D --> S
+    A --> S
+    B --> S
+    S --> P
+    P --> G
+    B --> G
+    A --> G
+    C --> G
+    G --> Q
+    Q --> U
+    U --> B
+```
 
 ## Exact hidden-state inference
 

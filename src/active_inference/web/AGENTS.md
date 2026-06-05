@@ -40,6 +40,12 @@ forward-looking pages safely.
 Edit the priority list in `server._list_doc_pages`. Keep entries short
 — they show up as nav buttons.
 
+## Adding extras UI behavior
+
+Extras use the same runner discovery as chapters. If you add payload fields for
+extras topics, update both the `/api/index` and `/api/extras/<topic>` helpers,
+render them in `templates.JS`, and extend `tests/web/test_server.py`.
+
 ## Frontend conventions
 
 - Vanilla JS, no transpile step. ES2020 is fine (`async`/`await`,

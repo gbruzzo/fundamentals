@@ -10,6 +10,7 @@ Public surface:
 * :class:`ChapterEntry` / :class:`ScriptEntry` — descriptors returned by the
   discovery functions.
 * :func:`discover_chapters` — find every ``chapters/chapter_<N>/`` folder.
+* :func:`discover_extras` — find every ``extras/<topic>/`` folder.
 * :func:`discover_scripts` — list the runnable scripts in one chapter.
 * :func:`run_script` / :func:`run_chapter` / :func:`run_all_chapters` —
   invoke chapter orchestrators with ``MPLBACKEND=Agg`` and ``--save``.
@@ -24,6 +25,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
+
+from active_inference.extra_topics import extra_topic_slugs, extra_topic_spec
 
 
 def _resolve_repo_root() -> Path:
@@ -44,14 +47,17 @@ def _resolve_repo_root() -> Path:
 
 REPO_ROOT: Path = _resolve_repo_root()
 CHAPTERS_ROOT: Path = REPO_ROOT / "chapters"
+EXTRAS_ROOT: Path = REPO_ROOT / "extras"
 OUTPUT_DIR: Path = REPO_ROOT / "output" / "figures"
 
 # Chapter index. Extend by dropping new ``chapter_<NN>/`` folders into
 # ``chapters/`` — discovery picks them up automatically.
 CHAPTER_DIRS: dict[int, Path] = {}
+EXTRA_TOPIC_DIRS: dict[str, Path] = {}
 
 
 _CHAPTER_PATTERN = re.compile(r"^chapter_(\d+)$")
+_EXTRA_PATTERN = re.compile(r"^[a-z0-9_]+$")
 
 
 def _refresh_chapter_dirs() -> None:
@@ -68,16 +74,37 @@ def _refresh_chapter_dirs() -> None:
         CHAPTER_DIRS[int(match.group(1))] = entry
 
 
+def _refresh_extra_topic_dirs() -> None:
+    """Refresh extras topic discovery caches after filesystem changes."""
+    EXTRA_TOPIC_DIRS.clear()
+    if not EXTRAS_ROOT.is_dir():
+        return
+    discovered: dict[str, Path] = {}
+    for entry in sorted(EXTRAS_ROOT.iterdir()):
+        if not entry.is_dir():
+            continue
+        if not _EXTRA_PATTERN.match(entry.name):
+            continue
+        discovered[entry.name] = entry
+    for slug in extra_topic_slugs():
+        if slug in discovered:
+            EXTRA_TOPIC_DIRS[slug] = discovered.pop(slug)
+    for slug, path in sorted(discovered.items()):
+        EXTRA_TOPIC_DIRS[slug] = path
+
+
 _refresh_chapter_dirs()
+_refresh_extra_topic_dirs()
 
 
 @dataclass(frozen=True)
 class ScriptEntry:
-    """One runnable chapter orchestrator."""
+    """One runnable chapter or extras orchestrator."""
 
     path: Path
-    chapter: int
-    kind: str  # "example", "animation", "visualize", "concept", "interactive", "other"
+    chapter: int | None
+    kind: str  # "example", "animation", "visualize", "simulate", "concept", "interactive", "other"
+    topic: str | None = None
 
     @property
     def name(self) -> str:
@@ -115,11 +142,71 @@ class ChapterEntry:
             return str(self.path)
 
 
+@dataclass
+class ExtraTopicEntry:
+    """An extras topic folder and its runnable scripts."""
+
+    slug: str
+    path: Path
+    scripts: list[ScriptEntry] = field(default_factory=list)
+
+    @property
+    def title(self) -> str:
+        """Return display metadata derived from this extras topic slug."""
+        try:
+            return extra_topic_spec(self.slug).title
+        except KeyError:
+            pass
+        return self.slug.replace("_", " ").title()
+
+    @property
+    def family(self) -> str:
+        """Return the curriculum family for this extras topic when registered."""
+        try:
+            return extra_topic_spec(self.slug).family
+        except KeyError:
+            return "Extras"
+
+    @property
+    def summary(self) -> str:
+        """Return the registered topic summary when available."""
+        try:
+            return extra_topic_spec(self.slug).summary
+        except KeyError:
+            return "Extras topic"
+
+    @property
+    def chapters(self) -> tuple[int, ...]:
+        """Return book chapters associated with this extras topic."""
+        try:
+            return extra_topic_spec(self.slug).chapters
+        except KeyError:
+            return ()
+
+    @property
+    def sections(self) -> tuple[str, ...]:
+        """Return book sections associated with this extras topic."""
+        try:
+            return extra_topic_spec(self.slug).sections
+        except KeyError:
+            return ()
+
+    @property
+    def relative(self) -> str:
+        """Return display metadata derived from this repository path."""
+        try:
+            return str(self.path.relative_to(REPO_ROOT))
+        except ValueError:
+            return str(self.path)
+
+
 def _classify(script: Path) -> str:
     """Classify a chapter script by filename convention."""
     name = script.name
     if name.startswith("animation_"):
         return "animation"
+    if name.startswith("simulate_"):
+        return "simulate"
     if name.startswith("visualize_"):
         return "visualize"
     if name.startswith("example_"):
@@ -161,6 +248,19 @@ def discover_chapters() -> list[ChapterEntry]:
     ]
 
 
+def discover_extras() -> list[ExtraTopicEntry]:
+    """Return every extras topic folder, populated with runnable scripts."""
+    _refresh_extra_topic_dirs()
+    return [
+        ExtraTopicEntry(
+            slug=slug,
+            path=path,
+            scripts=discover_extra_scripts(slug),
+        )
+        for slug, path in EXTRA_TOPIC_DIRS.items()
+    ]
+
+
 def discover_scripts(
     chapter: int,
     *,
@@ -193,6 +293,33 @@ def discover_scripts(
         if kind == "interactive" and not include_interactive:
             continue
         out.append(ScriptEntry(path=candidate, chapter=chapter, kind=kind))
+    return out
+
+
+def discover_extra_scripts(
+    topic: str,
+    *,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    include_interactive: bool = False,
+) -> list[ScriptEntry]:
+    """List runnable scripts in one extras topic folder."""
+    _refresh_extra_topic_dirs()
+    if topic not in EXTRA_TOPIC_DIRS:
+        raise KeyError(f"Unknown extras topic: {topic!r}")
+    base = EXTRA_TOPIC_DIRS[topic]
+    out: list[ScriptEntry] = []
+    for candidate in sorted(base.glob("*.py")):
+        if not _is_runnable(candidate) and not include_interactive:
+            continue
+        kind = _classify(candidate)
+        if kind == "animation" and not include_animations:
+            continue
+        if kind == "visualize" and not include_visualizations:
+            continue
+        if kind == "interactive" and not include_interactive:
+            continue
+        out.append(ScriptEntry(path=candidate, chapter=None, kind=kind, topic=topic))
     return out
 
 
@@ -277,6 +404,38 @@ def run_chapter(
     return results
 
 
+def run_extra_topic(
+    topic: str,
+    *,
+    save: bool = True,
+    keep_going: bool = False,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    quiet: bool = False,
+) -> list[tuple[ScriptEntry, int]]:
+    """Run every script in one extras topic, returning ``(script, returncode)`` pairs."""
+    results: list[tuple[ScriptEntry, int]] = []
+    scripts = discover_extra_scripts(
+        topic,
+        include_animations=include_animations,
+        include_visualizations=include_visualizations,
+    )
+    if not quiet:
+        print(f"\n=== Extra: {topic} ({len(scripts)} scripts) ===", flush=True)
+    for script in scripts:
+        completed = run_script(script, save=save, quiet=quiet)
+        results.append((script, completed.returncode))
+        if completed.returncode != 0 and not keep_going:
+            if not quiet:
+                print(
+                    f"  X {script.name} failed (returncode={completed.returncode}). "
+                    f"Aborting (use --keep-going to continue).",
+                    flush=True,
+                )
+            break
+    return results
+
+
 def run_all_chapters(
     *,
     save: bool = True,
@@ -299,6 +458,31 @@ def run_all_chapters(
         first_failure = next(
             (rc for _, rc in out[entry.number] if rc != 0), 0
         )
+        if first_failure and not keep_going:
+            break
+    return out
+
+
+def run_all_extras(
+    *,
+    save: bool = True,
+    keep_going: bool = False,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    quiet: bool = False,
+) -> dict[str, list[tuple[ScriptEntry, int]]]:
+    """Run every extras topic, returning a per-topic results dict."""
+    out: dict[str, list[tuple[ScriptEntry, int]]] = {}
+    for entry in discover_extras():
+        out[entry.slug] = run_extra_topic(
+            entry.slug,
+            save=save,
+            keep_going=keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+            quiet=quiet,
+        )
+        first_failure = next((rc for _, rc in out[entry.slug] if rc != 0), 0)
         if first_failure and not keep_going:
             break
     return out

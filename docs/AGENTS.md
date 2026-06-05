@@ -39,7 +39,8 @@ note in the file header explaining the placement.
 
 ## What never lives here
 
-- Runnable scripts → `chapters/` or `scripts/` at the repo root.
+- Runnable chapter/example scripts → `chapters/`; cross-cutting topic
+  orchestrators → `extras/`; batch utilities → `scripts/`.
 - Generated content (figures, GIFs) → `output/`.
 - Mathematical derivations more than a few lines.
 
@@ -48,7 +49,8 @@ note in the file header explaining the placement.
 - Every PR that adds a public symbol must also update either
   `reference/<sub>.md` or `statistics/<tool>.md`.
 - Every PR that adds a chapter script must also update
-  `chapters/chapter_<N>.md`.
+  `chapters/chapter_<N>.md`; every PR that adds an extras topic must update
+  `topics/` or `reference/` signposting as appropriate.
 - Cross-cutting structural changes (a new subpackage, a new layer) must
   update `architecture.md` and add an entry to `notation.md` for any new
   symbol.

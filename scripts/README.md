@@ -1,7 +1,7 @@
 # scripts/ — Batch Runners and Pipeline
 
-Utility scripts for rendering figures and running chapter orchestrators in
-bulk. For interactive day-to-day use prefer the top-level
+Utility scripts for rendering figures and validating chapter or extras
+orchestrators in bulk. For interactive day-to-day use prefer the top-level
 [`run.sh`](../run.sh) menu; the files here are still wired into CI and the
 historical batch workflow.
 
@@ -10,6 +10,7 @@ historical batch workflow.
 | File | Description |
 |---|---|
 | `run_all_figures.py` | Render all chapter figures to `output/figures/`. |
+| `validate_book_topic_coverage.py` | Check the book-topic coverage matrix against the live extras registry and folders; `--require-rendered` also verifies expected extras PNG/GIF and NPZ+JSON artifacts. |
 | `validate_rendered_figures.py` | Check rendered PNG/GIF artifacts for corruption, blank output, tiny dimensions, and trivial GIFs. |
 | `validate_raw_data_exports.py` | Check `output/data/` NPZ+JSON sidecars for missing partners, invalid arrays, and manifest drift. |
 | `run_all_chapter_01.sh` | Shell shortcut for `--chapters 1`. |
@@ -32,12 +33,19 @@ uv run python scripts/run_all_figures.py --clean
 # Skip slow GIF renderers
 uv run python scripts/run_all_figures.py --no-animations
 
+# Render extras only
+uv run python scripts/run_all_figures.py --no-chapters --extras entropy expected_free_energy
+uv run python scripts/run_all_figures.py --no-chapters --extras
+
 # Continue even if one script fails
 uv run python scripts/run_all_figures.py --keep-going
 
 # Validate rendered artifacts after a render
 uv run python scripts/validate_rendered_figures.py --root output/figures
+uv run python scripts/validate_book_topic_coverage.py
+uv run python scripts/validate_book_topic_coverage.py --require-rendered
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+uv run python scripts/validate_raw_data_exports.py --root output/data
 
 # Combine flags
 uv run python scripts/run_all_figures.py --clean --keep-going --chapters 2
@@ -61,9 +69,10 @@ with the system `python`.
 - `--clean` removes stale generated media files while preserving hand-maintained
   documentation in `output/figures/` and stale raw-data `.npz` / `.json`
   files while preserving documentation in `output/data/`.
-- Every `--save` script is expected to produce both visual artifacts and
-  raw-data sidecars through `save_chapter_data` (usually called indirectly by
-  shared figure/animation helpers).
+- Every `--save` chapter script is expected to produce both visual artifacts
+  and raw-data sidecars through `save_chapter_data` (usually called indirectly
+  by shared figure/animation helpers). Extras scripts use `save_extra_data`
+  under `output/data/extras/<topic>/`.
 - Chapter 1: runs files matching `0*.py` in `chapters/chapter_01/`.
 - Chapter 2: runs all `example_*.py` + `visualize_*.py` + `animation_*.py`
   files, skipping anything with `interactive` in the name.
@@ -84,7 +93,7 @@ without remembering the underlying argparse vocabulary.
 - `python -m active_inference.web` (when `--web` is passed) — the local
   browser UI.
 
-Both discover chapter scripts folder-by-folder (they do **not** call
+Both discover chapter and extras scripts folder-by-folder (they do **not** call
 into `run_all_figures.py`) and apply the same conventions
 (`MPLBACKEND=Agg`, `--save`, skip `interactive_*`). Pick whichever
 surface fits the situation:
@@ -94,9 +103,12 @@ surface fits the situation:
 | Hands-on exploration in the terminal | `./run.sh` |
 | Browser gallery + render buttons | `./run.sh --web` |
 | CI / nightly figure regen | `scripts/run_all_figures.py` |
+| Book-topic coverage QA | `scripts/validate_book_topic_coverage.py` |
+| Book-topic rendered extras QA | `scripts/validate_book_topic_coverage.py --require-rendered` |
 | Artifact QA after render | `scripts/validate_rendered_figures.py` |
 | Raw-data QA after render | `scripts/validate_raw_data_exports.py` |
 | Re-render a single chapter | any of the three |
+| Re-render extras topics | `uv run python -m active_inference.menu --extras` |
 | Programmatic discovery | `active_inference.menu.runner` |
 
 ## CI Integration

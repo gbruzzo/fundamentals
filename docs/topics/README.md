@@ -2,7 +2,9 @@
 
 Topic pages explain a single idea that may span more than one book
 chapter. They are the natural home for cross-cutting design notes that
-would clutter a single chapter page.
+would clutter a single chapter page. The runnable `extras/` curriculum is
+broader and is indexed in
+[`../reference/book_topic_matrix.md`](../reference/book_topic_matrix.md).
 
 ## Pages
 
@@ -16,6 +18,7 @@ would clutter a single chapter page.
 | [`inverse_problem.md`](inverse_problem.md) | Why naive inversion fails, how priors / hierarchies / noise restore identifiability. |
 | [`active_inference.md`](active_inference.md) | The active-inference frame: perception, action, and expected free energy in context. |
 | [`free_energy_principle.md`](free_energy_principle.md) | The Free Energy Principle and how variational free energy operationalizes it. |
+| [`thermodynamic_bridge.md`](thermodynamic_bridge.md) | The explicit `U`, `S`, `T`, `H`, and `G` analogy layer used by extras. |
 | [`bayesian_mechanics.md`](bayesian_mechanics.md) | Bayesian mechanics — the triangle linking Bayesian inference, the FEP, and active inference. |
 
 ## How to read these pages
@@ -36,3 +39,5 @@ Each topic page has the same shape:
 - [`../statistics/`](../statistics/) — narrower pages on a single
   statistical tool.
 - [`../reference/`](../reference/) — full API listing.
+- [`../reference/book_topic_matrix.md`](../reference/book_topic_matrix.md) —
+  book-section coverage for all extras topics.

@@ -42,6 +42,30 @@ from .diagnostics import (
     posterior_predictive_check,
     standardize,
 )
+from .ergodic import (
+    EntropyBound,
+    density_entropy,
+    entropy_upper_bound_from_vfe,
+    ergodic_density,
+    ergodic_ou_trajectory,
+)
+from .factor_graph import (
+    categorical_factor_message,
+    normalize_message,
+    sum_product_chain,
+    variational_message_update,
+)
+from .free_energy_forms import (
+    FreeEnergyForm,
+    bethe_free_energy_form,
+    expected_free_energy_form,
+    free_energy_of_future,
+    free_energy_variant_table,
+    generalized_free_energy_form,
+    observed_predicted_free_energy,
+    renyi_bound,
+    renyi_limit_energy,
+)
 from .distributions import (
     diagonal_cov,
     dirac_like_pdf,
@@ -83,6 +107,16 @@ from .posterior import (
     posterior_mean,
     posterior_std,
     summarize_posterior,
+)
+from .thermodynamics import (
+    ThermodynamicState,
+    boltzmann_entropy,
+    canonical_probabilities,
+    enthalpy,
+    expected_energy,
+    gibbs_free_energy,
+    helmholtz_free_energy,
+    vfe_thermodynamic_state,
 )
 from .types import assert_cov, assert_probabilities
 from .validators import (
@@ -168,6 +202,15 @@ __all__ = [
     "posterior_mean",
     "posterior_std",
     "summarize_posterior",
+    # Thermodynamic / FEP bridge
+    "ThermodynamicState",
+    "canonical_probabilities",
+    "expected_energy",
+    "boltzmann_entropy",
+    "helmholtz_free_energy",
+    "enthalpy",
+    "gibbs_free_energy",
+    "vfe_thermodynamic_state",
     # Diagnostics
     "CalibrationCurve",
     "PosteriorPredictiveCheck",
@@ -186,4 +229,23 @@ __all__ = [
     "normal_ci",
     "posterior_predictive_check",
     "standardize",
+    # Part III extras helpers
+    "FreeEnergyForm",
+    "expected_free_energy_form",
+    "free_energy_of_future",
+    "observed_predicted_free_energy",
+    "generalized_free_energy_form",
+    "bethe_free_energy_form",
+    "renyi_bound",
+    "renyi_limit_energy",
+    "free_energy_variant_table",
+    "normalize_message",
+    "categorical_factor_message",
+    "sum_product_chain",
+    "variational_message_update",
+    "EntropyBound",
+    "ergodic_density",
+    "density_entropy",
+    "entropy_upper_bound_from_vfe",
+    "ergodic_ou_trajectory",
 ]

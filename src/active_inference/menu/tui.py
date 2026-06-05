@@ -28,12 +28,17 @@ from typing import Sequence
 
 from .runner import (
     CHAPTER_DIRS,
+    EXTRA_TOPIC_DIRS,
     REPO_ROOT,
     ChapterEntry,
+    ExtraTopicEntry,
     ScriptEntry,
     discover_chapters,
+    discover_extras,
     run_all_chapters,
+    run_all_extras,
     run_chapter,
+    run_extra_topic,
     run_script,
 )
 
@@ -53,8 +58,12 @@ def _term_width(default: int = 80) -> int:
         return default
 
 
-def render_menu(chapters: Sequence[ChapterEntry]) -> str:
+def render_menu(
+    chapters: Sequence[ChapterEntry],
+    extras: Sequence[ExtraTopicEntry] | None = None,
+) -> str:
     """Return the printable menu string (no I/O)."""
+    extras = discover_extras() if extras is None else extras
     width = max(60, min(_term_width(), 100))
     rule = "-" * width
     lines: list[str] = [BANNER.rstrip(), ""]
@@ -70,9 +79,24 @@ def render_menu(chapters: Sequence[ChapterEntry]) -> str:
             f"{len(entry.scripts):>2} script(s)   {entry.relative}"
         )
     lines.append("")
+    lines.append("Extras:")
+    if not extras:
+        lines.append("  (no extras discovered - is `extras/` missing?)")
+    last_family = None
+    for entry in extras:
+        if entry.family != last_family:
+            lines.append(f"  {entry.family}:")
+            last_family = entry.family
+        lines.append(
+            f"    [extra:{entry.slug}]  {entry.title:<30}  "
+            f"{len(entry.scripts):>2} script(s)   {entry.relative}"
+        )
+    lines.append("")
     lines.append("Bulk actions:")
     lines.append("   [a]  Run ALL chapters (every script with --save)")
+    lines.append("   [x]  Run ALL extras (every extras script with --save)")
     lines.append("   [l]  List every script in every chapter")
+    lines.append("   [e]  Run one extras topic")
     lines.append("   [s]  Run a single script (by path)")
     lines.append("   [w]  Launch the local web UI in your browser")
     lines.append("   [h]  Print this menu again")
@@ -81,7 +105,7 @@ def render_menu(chapters: Sequence[ChapterEntry]) -> str:
     return "\n".join(lines)
 
 
-def _print_scripts(chapter: ChapterEntry) -> None:
+def _print_scripts(chapter: ChapterEntry | ExtraTopicEntry) -> None:
     """Print a formatted section of discovered chapter scripts."""
     print(f"\n{chapter.title} — {len(chapter.scripts)} script(s)")
     for i, script in enumerate(chapter.scripts, start=1):
@@ -89,6 +113,7 @@ def _print_scripts(chapter: ChapterEntry) -> None:
             "example": "ex ",
             "animation": "gif",
             "visualize": "viz",
+            "simulate": "sim",
             "concept": "cnp",
             "interactive": "int",
             "other": "   ",
@@ -128,6 +153,10 @@ def _resolve_script_path(raw: str) -> Path | None:
         for path in chapter_dir.glob("*.py"):
             if raw in path.name:
                 matches.append(path)
+    for extra_dir in EXTRA_TOPIC_DIRS.values():
+        for path in extra_dir.glob("*.py"):
+            if raw in path.name:
+                matches.append(path)
     if len(matches) == 1:
         return matches[0]
     if matches:
@@ -145,6 +174,7 @@ def prompt_menu(
 ) -> int:
     """Interactive loop. Returns a process exit code."""
     chapters = discover_chapters()
+    extras = discover_extras()
     print(render_menu(chapters))
     exit_code = 0
     while True:
@@ -157,10 +187,12 @@ def prompt_menu(
         if raw in {"q", "quit", "exit"}:
             return exit_code
         if raw in {"h", "?", "help", "menu"}:
-            print(render_menu(chapters))
+            print(render_menu(chapters, extras))
             continue
         if raw == "l":
             for entry in chapters:
+                _print_scripts(entry)
+            for entry in extras:
                 _print_scripts(entry)
             continue
         if raw == "a":
@@ -169,6 +201,44 @@ def prompt_menu(
                 keep_going=keep_going,
                 include_animations=include_animations,
             )
+            exit_code = max(exit_code, _summarize(results))
+            continue
+        if raw == "x":
+            results = run_all_extras(
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )
+            exit_code = max(exit_code, _summarize(results))
+            continue
+        if raw == "e":
+            topic = input("  extras topic slug: ").strip()
+            if not topic:
+                continue
+            if topic not in EXTRA_TOPIC_DIRS:
+                print(f"  Unknown extras topic {topic!r}. Available: "
+                      f"{sorted(EXTRA_TOPIC_DIRS)}")
+                continue
+            results = {topic: run_extra_topic(
+                topic,
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )}
+            exit_code = max(exit_code, _summarize(results))
+            continue
+        if raw.startswith("extra:"):
+            topic = raw.split(":", 1)[1]
+            if topic not in EXTRA_TOPIC_DIRS:
+                print(f"  Unknown extras topic {topic!r}. Available: "
+                      f"{sorted(EXTRA_TOPIC_DIRS)}")
+                continue
+            results = {topic: run_extra_topic(
+                topic,
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )}
             exit_code = max(exit_code, _summarize(results))
             continue
         if raw == "w":
@@ -220,8 +290,12 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     g = p.add_mutually_exclusive_group()
     g.add_argument("--all", action="store_true",
                    help="Run every script in every chapter and exit.")
+    g.add_argument("--extras", action="store_true",
+                   help="Run every script in every extras topic and exit.")
     g.add_argument("--chapter", type=int, metavar="N",
                    help="Run every script in chapter N and exit.")
+    g.add_argument("--extra", metavar="TOPIC",
+                   help="Run every script in one extras topic and exit.")
     g.add_argument("--script", metavar="PATH",
                    help="Run a single script (path or filename fragment) and exit.")
     g.add_argument("--list", action="store_true",
@@ -246,13 +320,25 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.list:
         chapters = discover_chapters()
-        print(render_menu(chapters))
+        extras = discover_extras()
+        print(render_menu(chapters, extras))
         for entry in chapters:
+            _print_scripts(entry)
+        for entry in extras:
             _print_scripts(entry)
         return 0
 
     if args.all:
         results = run_all_chapters(
+            save=save,
+            keep_going=args.keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+        )
+        return _summarize(results)
+
+    if args.extras:
+        results = run_all_extras(
             save=save,
             keep_going=args.keep_going,
             include_animations=include_animations,
@@ -267,6 +353,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         results = {args.chapter: run_chapter(
             args.chapter,
+            save=save,
+            keep_going=args.keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+        )}
+        return _summarize(results)
+
+    if args.extra is not None:
+        if args.extra not in EXTRA_TOPIC_DIRS:
+            print(f"Unknown extras topic {args.extra!r}. Available: "
+                  f"{sorted(EXTRA_TOPIC_DIRS)}", file=sys.stderr)
+            return 2
+        results = {args.extra: run_extra_topic(
+            args.extra,
             save=save,
             keep_going=args.keep_going,
             include_animations=include_animations,

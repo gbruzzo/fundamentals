@@ -12,12 +12,14 @@ from pathlib import Path
 import pytest
 
 from active_inference.menu import runner, tui
+from active_inference.extra_topics import extra_topic_slugs
 
 
 class TestDiscovery:
     def test_repo_root_resolves(self) -> None:
         assert runner.REPO_ROOT.is_dir()
         assert (runner.REPO_ROOT / "chapters").is_dir()
+        assert (runner.REPO_ROOT / "extras").is_dir()
         assert (runner.REPO_ROOT / "src" / "active_inference").is_dir()
 
     def test_chapter_dirs_populated(self) -> None:
@@ -64,6 +66,33 @@ class TestDiscovery:
         with pytest.raises(KeyError):
             runner.discover_scripts(99)
 
+    def test_discover_extras_returns_topic_entries(self) -> None:
+        extras = runner.discover_extras()
+        slugs = [entry.slug for entry in extras]
+        assert slugs == list(extra_topic_slugs())
+        assert {
+            "bayes_equation",
+            "kl_divergence",
+            "entropy",
+            "enthalpy",
+            "temperature",
+            "variational_free_energy",
+        }.issubset(slugs)
+        assert slugs[:6] == list(extra_topic_slugs())[:6]
+
+    def test_extra_topic_scripts_include_declared_kinds(self) -> None:
+        scripts = runner.discover_extra_scripts("entropy")
+        names = [script.name for script in scripts]
+        kinds = {script.kind for script in scripts}
+        assert "visualize_entropy.py" in names
+        assert "simulate_entropy.py" in names
+        assert {"visualize", "simulate"}.issubset(kinds)
+        assert all(script.topic == "entropy" for script in scripts)
+
+    def test_unknown_extra_topic_raises(self) -> None:
+        with pytest.raises(KeyError):
+            runner.discover_extra_scripts("not_a_topic")
+
 
 class TestClassification:
     @pytest.mark.parametrize(
@@ -71,6 +100,7 @@ class TestClassification:
         [
             ("example_2_1_linear_deterministic.py", "example"),
             ("animation_em_steps.py", "animation"),
+            ("simulate_entropy.py", "simulate"),
             ("visualize_calibration.py", "visualize"),
             ("01_box_scenario.py", "concept"),
             ("interactive_explorer.py", "interactive"),
@@ -87,6 +117,8 @@ class TestMenuRendering:
         assert "Chapter 01" in text
         assert "Chapter 02" in text
         assert "Chapter 03" in text
+        assert "Extras" in text
+        assert "entropy" in text
         assert "[a]" in text
         assert "[q]" in text
 
@@ -100,6 +132,11 @@ class TestScriptResolution:
         path = tui._resolve_script_path("example_2_2_linear")
         assert path is not None
         assert path.name == "example_2_2_linear_probabilistic.py"
+
+    def test_extra_filename_fragment_matches(self) -> None:
+        path = tui._resolve_script_path("visualize_entropy")
+        assert path is not None
+        assert path.name == "visualize_entropy.py"
 
     def test_full_relative_path_resolves(self) -> None:
         path = tui._resolve_script_path(

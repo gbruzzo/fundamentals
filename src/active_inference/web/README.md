@@ -1,7 +1,7 @@
 # `active_inference.web` — local browser UI
 
-A stdlib-only HTTP server that exposes a tab-per-chapter web interface
-over the same discovery layer the text menu uses. Launched from
+A stdlib-only HTTP server that exposes a tab-per-chapter and tab-per-extras
+web interface over the same discovery layer the text menu uses. Launched from
 [`run.sh --web`](../../../run.sh).
 
 ## What you get
@@ -11,6 +11,8 @@ A single-page app at `http://127.0.0.1:8765/` with:
 - **One tab per chapter** with subtitle (e.g. "The Hypothesis-Testing
   Brain") and a per-chapter sidebar badge showing
   `cached-figures / scripts`.
+- **One tab per extras topic** with the topic README, script rows, cached
+  figure count, and render buttons.
 - **Metric strip** at the top of every chapter tab: example count,
   animation count, visualization count, cached-figure count (red).
 - **Figure gallery** split into "Figures" (PNG/JPG/SVG) and
@@ -76,10 +78,12 @@ and prints the actual URL.
 | GET    | `/favicon.svg` (or `.ico`)      | Inline SVG favicon (mono + red dot) |
 | GET    | `/static/app.css`               | CSS bundle |
 | GET    | `/static/app.js`                | JS bundle |
-| GET    | `/api/index`                    | `{chapters: [{number, title, subtitle, scripts[], kind_counts, figure_count, relative}], docs, repo}` |
+| GET    | `/api/index`                    | `{chapters: [...], extras: [...], docs, repo}` with extras family/section metadata |
 | GET    | `/api/chapter/<N>`              | `{scripts (with size, mtime, docstring, example_number), figures (with size, mtime, width, height, generated_by), docs, readme_html, readme_source}` |
+| GET    | `/api/extra/<topic>`            | `{scripts, figures, readme_html, readme_source, family, summary, chapters, sections}` |
 | GET    | `/api/doc/<id>`                 | `{title, source, html}` (Markdown → HTML) |
 | GET    | `/figures/<NN>/<name>`          | Static file from `output/figures/chapter_<NN>/` |
+| GET    | `/figures/extras/<topic>/<name>`| Static file from `output/figures/extras/<topic>/` |
 | GET    | `/docs-raw/<path>`              | Static file from `docs/` |
 | POST   | `/api/run`                      | Run a non-interactive script and return `{returncode, stdout_tail, stderr_tail}` |
 | POST   | `/api/launch-interactive`       | Open a slider script on the host and return `{pid, script}` |

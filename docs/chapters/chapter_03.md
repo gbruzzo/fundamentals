@@ -20,6 +20,22 @@ demonstrated by a thin orchestrator in `chapters/chapter_03/`.
 | Linear Gaussian System (sensor fusion) | `LinearGaussianSystem(...).posterior_batch(Y)` | `example_3_6_lgs_food_localization.py` |
 | Factor analysis via EM | `fit_factor_analysis(Y, n_factors=...)` | `example_3_7_factor_analysis_em.py` |
 
+## Script inventory
+
+| File | Role |
+|---|---|
+| `animation_bimodal_emergence.py` | Non-injective generator animation. |
+| `animation_blr_predictive_band.py` | Bayesian linear-regression predictive-band animation. |
+| `animation_blr_tightening.py` | Parameter posterior tightening animation. |
+| `animation_em_convergence.py` | EM log-likelihood and loadings animation. |
+| `animation_em_steps.py` | E-step / M-step factor-analysis animation. |
+| `animation_lgs_online.py` | Online Linear Gaussian System posterior animation. |
+| `animation_precision_sweep.py` | Prior/likelihood precision sweep animation. |
+| `animation_sufficient_statistics.py` | Running sufficient-statistics animation. |
+| `visualize_calibration.py` | Calibration reliability diagram. |
+| `visualize_coverage.py` | Credible-interval coverage sweep. |
+| `visualize_posterior_predictive.py` | Posterior-predictive diagnostic figure. |
+
 ## Reusable building blocks
 
 * **`active_inference.core.distributions`** — `mvn_pdf`, `mvn_log_pdf`,

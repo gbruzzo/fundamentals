@@ -44,6 +44,13 @@ demonstrated by a thin orchestrator in `chapters/chapter_04/`.
 | Fixed-form VI (gradient on `(μ, σ²)`) | `fixed_form_vi(model, y, x_grid, ...)` | Alg. 4.6.1, Ex. 4.7 | `example_4_7_fixed_form.py` |
 | Free-form mean-field CAVI | `free_form_cavi(y, cfg=...)` | Alg. 4.5.1, Ex. 4.5/4.6 | `example_4_6_free_form_cavi.py` |
 
+Additional script coverage: `example_4_2_surprisal.py` renders the surprisal
+relationship, `example_4_3_vfe_forms.py` compares the five decompositions,
+`animation_vfe_descent.py` animates `q(x)` approaching the posterior,
+`visualize_kl_loss.py`, `visualize_vfe_intuition.py`, and
+`visualize_model_comparison.py` provide supporting figures, and
+`interactive_vfe_explorer.py` exposes the same surface with sliders.
+
 * **Coordinate search** evaluates VFE at the eight `(μ ± κ, σ² ± κ)` neighbours
   and jumps to the lowest — VFE *is* a usable loss with no gradient at all. With
   the book's `κ=0.01, 20` iterations it deliberately stops short of the minimum

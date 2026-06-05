@@ -11,7 +11,8 @@ output/
 ├── README.md          ← this file
 ├── data/              ← raw numerical results (NPZ arrays + JSON manifests)
 │   ├── chapter_01/    ← raw-data sidecars for Chapter 1 artifacts
-│   └── ... chapter_10/
+│   ├── ... chapter_10/
+│   └── extras/        ← raw-data sidecars for extras topic artifacts
 └── figures/           ← rendered figures (.png) + animations (.gif)
     ├── chapter_01/    ← figures from Chapter 1 orchestrators
     ├── chapter_02/    ← figures + GIFs from Chapter 2 orchestrators
@@ -22,11 +23,12 @@ output/
     ├── chapter_07/    ← active generalized filtering figures + GIF
     ├── chapter_08/    ← learning / attention / hierarchy figures
     ├── chapter_09/    ← discrete POMDP figures + GIFs
-    └── chapter_10/    ← POMDP learning / extension figures + GIFs
+    ├── chapter_10/    ← POMDP learning / extension figures + GIFs
+    └── extras/        ← cross-cutting topic figures
 ```
 
-Each `figures/chapter_<N>/` folder has its own README listing the exact files
-and the script that produces each one.
+Each `figures/chapter_<N>/` and `figures/extras/<topic>/` folder has its own
+README listing the exact files and the script that produces each one.
 
 ## .gitignore
 
@@ -59,10 +61,14 @@ python scripts/validate_rendered_figures.py --root output/figures
 
 # Validate raw-data NPZ+JSON sidecars
 python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+python scripts/validate_raw_data_exports.py --root output/data
 
 # Or by chapter
 python scripts/run_all_figures.py --chapters 1
 python scripts/run_all_figures.py --chapters 4 5
+
+# Or by extras topic
+python -m active_inference.menu --extra entropy
 ```
 
 ## Path Helpers
@@ -78,8 +84,9 @@ default_data_dir()    # → Path("output/data")
 
 ## Contents
 
-Figures and raw data are organized one folder per chapter. The raw-data files
-are written by `save_chapter_data` directly or by shared visualization helpers:
+Figures and raw data are organized one folder per chapter, plus one folder per
+extras topic. The raw-data files are written by `save_chapter_data`,
+`save_extra_data`, or shared visualization helpers:
 
 - [`figures/chapter_01/`](figures/chapter_01/README.md)
 - [`figures/chapter_02/`](figures/chapter_02/README.md)
@@ -91,7 +98,10 @@ are written by `save_chapter_data` directly or by shared visualization helpers:
 - [`figures/chapter_08/`](figures/chapter_08/README.md)
 - [`figures/chapter_09/`](figures/chapter_09/README.md)
 - [`figures/chapter_10/`](figures/chapter_10/README.md)
+- [`figures/extras/`](figures/extras/README.md)
+- [`data/extras/`](data/extras/README.md)
 
 Each data export has a compressed `NPZ` file for numeric arrays plus a `JSON`
-manifest containing script provenance, CLI args, seed when present, linked
-figure paths, array shape/dtype contracts, and summary statistics.
+manifest containing script provenance, chapter or extras topic, CLI args, seed
+when present, linked figure paths, array shape/dtype contracts, and summary
+statistics.

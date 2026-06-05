@@ -39,7 +39,8 @@ docs/
 │   ├── gradient_descent.md
 │   ├── inverse_problem.md
 │   ├── learning_and_inference.md
-│   └── multivariate_gaussians.md
+│   ├── multivariate_gaussians.md
+│   └── thermodynamic_bridge.md
 ├── statistics/                ← statistical-tool reference
 │   ├── calibration.md
 │   ├── divergences.md
@@ -48,6 +49,7 @@ docs/
 │   ├── posterior_predictive.md
 │   └── scoring_rules.md
 └── reference/                 ← per-subpackage API reference
+    ├── book_topic_matrix.md   ← PDF-section to extras-topic coverage matrix
     ├── core.md
     ├── estimators.md
     ├── utils.md
@@ -66,6 +68,7 @@ docs/
 | Which Python identifier maps to a book symbol | [`notation.md`](notation.md) |
 | What Chapter *N* of the book covers and which scripts mirror it | [`chapters/chapter_<N>.md`](chapters/) |
 | How Bayesian inference / regression / EM / ... works in this codebase | [`topics/`](topics/) |
+| Which book sections are covered by each extras topic | [`reference/book_topic_matrix.md`](reference/book_topic_matrix.md) |
 | How a specific statistical tool is implemented | [`statistics/`](statistics/) |
 | Every public symbol in a subpackage | [`reference/`](reference/) |
 
@@ -80,6 +83,11 @@ it. The high-level rule is:
   gains a new tool.
 - `reference/`: edit whenever the public API of a subpackage changes
   (i.e., when `__all__` changes).
+- `reference/book_topic_matrix.md`: edit or regenerate when the extras
+  topic registry changes; validate with
+  `uv run python scripts/validate_book_topic_coverage.py`. After rendering
+  extras, run `uv run python scripts/validate_book_topic_coverage.py
+  --require-rendered` to require the declared PNG/GIF and NPZ+JSON artifacts.
 
 The two root files are cross-cutting and update with any structural change
 to the codebase.

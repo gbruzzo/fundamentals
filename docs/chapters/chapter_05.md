@@ -68,6 +68,7 @@ orchestrator in `chapters/chapter_05/`.
 
 | Algorithm | Key API | Book | Orchestrator |
 |-----------|---------|------|--------------|
+| Prediction-error visualization | `plot_prediction_errors(model, y, mu_grid, ...)` | §5.1 | `example_5_1_prediction_errors.py` |
 | Univariate PC (perception) | `predictive_coding_inference(model, y, ...)` | Alg. 5.2.1 | `example_5_4_recognition_dynamics.py` |
 | Multivariate PC | `multivariate_predictive_coding(g, jacobian, y, m_x, ...)` | §5.3 | `example_5_3_multivariate.py` |
 | Hierarchical PC | `hierarchical_predictive_coding(model, y, ...)` | §5.4, Ex. 5.7 | `example_5_7_hierarchical.py` |

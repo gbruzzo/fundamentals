@@ -18,55 +18,81 @@ Every active-inference model needs:
 
 1. **A generative process** — the environment that produces observations.
    In this codebase: `LinearGaussianProcess`, `LinearGaussianMVProcess`,
-   or any subclass of `GenerativeProcess`.
+   `ActiveEnvironment`, `MultivariateActiveEnvironment`, or a POMDP
+   transition model.
 2. **A generative model** — the agent's beliefs about that environment.
-   `LinearGaussianModel`, `LinearGaussianMVModel`, or any subclass of
-   `GenerativeModel`.
+   `LinearGaussianModel`, `DynamicStateSpaceModel`,
+   `GeneralizedVectorModel`, `POMDPModel`, `FactorialPOMDP`, and
+   `HierarchicalPOMDP` are the main concrete forms.
 3. **A perception step** — invert the model to obtain a posterior over
-   hidden states. `GridBayesianInference.infer` (1-D),
-   `LinearGaussianSystem.posterior_batch` (multivariate), or the
-   sequential trace from `core.compose.running_stats`.
-4. **An action step** — change the environment so that future
-   observations reduce expected free energy. The minimal embodiment of
-   this in the current package is the `Pipeline.run(x_star, n)` loop:
-   the agent picks ``n``, the environment produces ``y``, and the
-   posterior tightens.
+   hidden states. This can be exact grid/LGS inference, generalized
+   filtering, predictive coding, or categorical POMDP state inference.
+4. **An action / policy step** — change the environment, or choose a
+   policy, so future observations fit preferences. Continuous examples
+   use `ActiveInferenceAgent`; discrete examples use expected free
+   energy and `policy_posterior`.
 
 The first three ingredients are the *passive* agent of Part I of the
 book; adding the fourth makes the agent *active*.
+
+## Implemented control patterns
+
+The repository now contains both continuous and discrete active-inference
+loops. They share the same modeling split, but action is represented
+differently: as a continuous control signal in Chapter 7 and as a policy
+posterior in Chapters 9-10.
+
+```mermaid
+flowchart LR
+    P["Generative process<br/>environment state and observations"]
+    O["Sensory data<br/>y or one-hot o"]
+    B["Belief update<br/>posterior, generalized filter, or POMDP inference"]
+    C7["Continuous action<br/>action_gradient or multivariate_action_gradient"]
+    C9["Discrete policy scoring<br/>risk + ambiguity - novelty"]
+    Q["Policy posterior<br/>policy_posterior or policy_posterior_full"]
+    A["Action changes future observations"]
+
+    P --> O
+    O --> B
+    B --> C7
+    B --> C9
+    C7 --> A
+    C9 --> Q
+    Q --> A
+    A --> P
+```
 
 ## How the codebase realizes the loop
 
 ```python
 import numpy as np
-from active_inference import Pipeline
-
-# 1. Build the loop: process + model + grid in one call.
-pipeline = Pipeline.linear_gaussian(
-    beta0=3.0, beta1=2.0, sigma2_y=0.4,
-    m_x=4.0, s2_x=1.0,
-    rng=np.random.default_rng(0),
+from active_inference import (
+    ActiveEnvironment, ActiveInferenceAgent, DynamicStateSpaceModel,
+    LinearFunction, simulate_active_inference,
 )
 
-# 2. Perception: a single posterior from a small batch.
-result = pipeline.run(x_star=2.0, n=20)
-print(result.summary())
-
-# 3. Action surrogate: choose `n` to reduce posterior entropy below a
-#    tolerance — a one-step expected-free-energy proxy.
-target_entropy = -0.5
-n = 1
-while result.entropy() > target_entropy and n < 200:
-    n += 5
-    result = pipeline.run(x_star=2.0, n=n)
-print(f"converged at N = {n}, entropy = {result.entropy():.3f}")
+env = ActiveEnvironment(
+    drift=LinearFunction(-1.0, 10.0),  # world is pulled toward v* = 10
+    g=LinearFunction(1.0, -3.0),
+)
+model = DynamicStateSpaceModel(
+    f=LinearFunction(-1.0, 0.0),       # agent prefers v = 0
+    g=LinearFunction(1.0, -3.0),
+    s2_x=1.0,
+    sigma2_y=0.05,
+)
+agent = ActiveInferenceAgent(model, forward_model=1.0, kappa_x=0.2, kappa_a=0.4)
+res = simulate_active_inference(
+    agent, env, x0=5.0, mu0=5.0, n_steps=6000,
+    action_start=2000, rng=np.random.default_rng(0),
+)
+print(res.settled_state(), res.settled_action())  # approx 0, approx -10
 ```
 
-The third block is a stripped-down stand-in for the *expected free energy*
-calculation that drives action selection in full active-inference models.
-In a richer setup, the agent would compare candidate actions by their
-expected posterior entropy and information gain, not just accept whatever
-``n`` happens to be next.
+The same principle appears in discrete form in Chapters 9-10: policies are
+scored by expected free energy (`risk + ambiguity`, optionally minus novelty),
+then converted into a posterior with `policy_posterior` or
+`policy_posterior_full`.
 
 ## Markov blankets in this codebase
 
@@ -79,14 +105,10 @@ never *evaluates* the model's densities.
 
 | Layer | What it is | What it can do |
 |---|---|---|
-| External | true ``x*`` | sampled from `process.sample(x_star, n)` only |
-| Sensory  | observed ``y`` | passed through `Pipeline.infer(y)` into the model |
-| Internal | belief over ``x`` | `InferenceResult` / `LGSPosterior` |
-| Active   | action / experiment | choosing ``n``, the prior, the grid |
-
-The package does not yet ship a control layer (deciding *which* action
-minimizes expected free energy) — adding one is the natural next
-extension; see the planned Chapter 7+ work in the roadmap.
+| External | true state ``x*`` / POMDP state | sampled or transitioned by process/environment code |
+| Sensory  | observed ``y`` / one-hot ``o`` | assimilated by perception or state inference |
+| Internal | belief ``μ`` / categorical posterior ``s`` | `InferenceResult`, generalized-filter traces, POMDP beliefs |
+| Active   | action ``a`` / policy ``π`` | continuous action gradients or EFE-scored policies |
 
 ## Information-theoretic bookkeeping
 
@@ -106,10 +128,10 @@ the running-stats helper they all appear as functions of ``N``.
 
 ## Pitfalls
 
-- **Action ≠ control law (yet).** The current package implements the
-  perception side fully; "action" here is loosely the choice of how
-  many observations to assimilate. Don't claim a full active-inference
-  loop without an explicit policy.
+- **Continuous and discrete action differ.** Chapter 7 action is a
+  continuous control signal descending free energy through the sensory
+  channel. Chapters 9-10 choose categorical policies by expected free
+  energy. Do not mix those interfaces.
 - **Free energy in the package is *variational* free energy** computed
   on a grid for 1-D models. Closed-form Gaussian KL +
   `gaussian_entropy_*` give analytic bounds for the multivariate case.

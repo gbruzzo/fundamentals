@@ -13,8 +13,11 @@ import pytest
 
 from active_inference.utils import (
     data_paths_for_figure,
+    data_paths_for_extra_figure,
+    extra_data_dir,
     extract_figure_data,
     save_chapter_data,
+    save_extra_data,
 )
 
 
@@ -61,6 +64,37 @@ def test_save_chapter_data_writes_npz_and_json_manifest(tmp_path: Path) -> None:
     assert manifest["arrays"]["beliefs"]["dtype"].startswith("float")
     assert manifest["summary"]["time"]["finite_fraction"] == pytest.approx(1.0)
     assert manifest["metadata"]["summary"]["final_error"] == pytest.approx(0.125)
+
+
+def test_save_extra_data_writes_topic_npz_and_json_manifest(tmp_path: Path) -> None:
+    """Persist extras topic arrays under output/data/extras/<topic>."""
+    npz_path, json_path = save_extra_data(
+        "temperature",
+        "visualize_temperature",
+        arrays={
+            "temperature": np.array([0.5, 1.0, 2.0]),
+            "free_energy": np.array([2.0, 1.0, 0.0]),
+        },
+        metadata={"script": "visualize_temperature.py", "summary": {"topic": "temperature"}},
+        figures=[Path("output/figures/extras/temperature/visualize_temperature.png")],
+        root=tmp_path,
+    )
+
+    assert npz_path == tmp_path / "extras" / "temperature" / "visualize_temperature.npz"
+    assert json_path == tmp_path / "extras" / "temperature" / "visualize_temperature.json"
+    assert npz_path.exists()
+    assert json_path.exists()
+
+    manifest = json.loads(json_path.read_text(encoding="utf-8"))
+    assert manifest["schema_version"] == 1
+    assert manifest["section"] == "extras"
+    assert manifest["topic"] == "temperature"
+    assert manifest["script"] == "visualize_temperature.py"
+    assert manifest["figures"] == [
+        "output/figures/extras/temperature/visualize_temperature.png"
+    ]
+    assert manifest["arrays"]["temperature"]["shape"] == [3]
+    assert manifest["metadata"]["summary"]["topic"] == "temperature"
 
 
 @pytest.mark.parametrize(
@@ -123,6 +157,16 @@ def test_data_paths_for_figure_maps_output_figures_to_output_data() -> None:
     assert json_path == REPO_ROOT / "output" / "data" / "chapter_08" / "demo.json"
 
 
+def test_data_paths_for_extra_figure_maps_output_figures_to_output_data() -> None:
+    """Map extras rendered artifacts to matching topic raw-data sidecars."""
+    npz_path, json_path = data_paths_for_extra_figure(
+        REPO_ROOT / "output" / "figures" / "extras" / "entropy" / "demo.png"
+    )
+    assert npz_path == REPO_ROOT / "output" / "data" / "extras" / "entropy" / "demo.npz"
+    assert json_path == REPO_ROOT / "output" / "data" / "extras" / "entropy" / "demo.json"
+    assert extra_data_dir("entropy") == REPO_ROOT / "output" / "data" / "extras" / "entropy"
+
+
 def test_validate_raw_data_exports_accepts_good_and_rejects_bad(
     tmp_path: Path,
 ) -> None:
@@ -156,3 +200,24 @@ def test_validate_raw_data_exports_accepts_good_and_rejects_bad(
     )
     assert bad.returncode != 0
     assert "shape" in bad.stderr
+
+
+def test_validate_raw_data_exports_accepts_extras_topics(tmp_path: Path) -> None:
+    """The raw-data validator can require extras topic exports."""
+    save_extra_data(
+        "entropy",
+        "good",
+        arrays={"x": np.arange(3, dtype=float)},
+        metadata={"script": "good.py"},
+        root=tmp_path,
+    )
+    validator = REPO_ROOT / "scripts" / "validate_raw_data_exports.py"
+
+    good = subprocess.run(
+        [sys.executable, str(validator), "--root", str(tmp_path), "--extras", "entropy"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert good.returncode == 0, good.stderr

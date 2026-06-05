@@ -1,8 +1,8 @@
 # `output/` — agent guide
 
-Generated artifacts produced by the chapter orchestrators. Treat generated
-media as ephemeral and reproducible from source; keep the README/AGENTS files
-as hand-maintained documentation.
+Generated artifacts produced by the chapter and extras orchestrators. Treat
+generated media as ephemeral and reproducible from source; keep the
+README/AGENTS files as hand-maintained documentation.
 
 ## Subfolders
 
@@ -19,6 +19,8 @@ as hand-maintained documentation.
 | `output/figures/chapter_09/` | `chapters/chapter_09/*.py --save` | PNGs + GIFs for Chapter 9 (discrete POMDP active inference). |
 | `output/figures/chapter_10/` | `chapters/chapter_10/*.py --save` | PNGs + GIFs for Chapter 10 (POMDP learning and extensions). |
 | `output/data/chapter_NN/` | `--save` chapter runs via `save_chapter_data` | raw numerical NPZ arrays plus JSON manifests. |
+| `output/figures/extras/<topic>/` | `extras/<topic>/visualize_<topic>.py --save` | PNG figures for cross-cutting extras topics. |
+| `output/data/extras/<topic>/` | `--save` extras runs via `save_extra_data` | raw numerical NPZ arrays plus JSON manifests. |
 
 ## Conventions
 
@@ -28,9 +30,10 @@ as hand-maintained documentation.
   FFmpeg / ImageMagick install required.
 - Default DPI is 150 for PNGs, 110 for GIF frames.
 - Every non-interactive `--save` run must pair visual output with raw-data
-  sidecars under `output/data/chapter_NN/`. The JSON manifest records script
-  provenance, CLI args, seed when present, figure paths, array shapes/dtypes,
-  and summary statistics.
+  sidecars under `output/data/chapter_NN/` or
+  `output/data/extras/<topic>/`. The JSON manifest records script provenance,
+  CLI args, seed when present, figure paths, array shapes/dtypes, and summary
+  statistics.
 
 ## Hygiene
 
@@ -41,8 +44,10 @@ as hand-maintained documentation.
 
   ```bash
   python scripts/run_all_figures.py --clean
+  python -m active_inference.menu --extras
   python scripts/validate_rendered_figures.py --root output/figures
   python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
+  python scripts/validate_raw_data_exports.py --root output/data
   ```
 
 ## Don't put

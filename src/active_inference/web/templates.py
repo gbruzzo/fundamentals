@@ -760,9 +760,11 @@ footer .accent { color: var(--accent); }
 JS = r"""
 const state = {
     chapters: [],
+    extras: [],
     docPages: [],
     activeTab: null,
     chapterCache: new Map(),  // number → payload
+    extraCache: new Map(),    // topic → payload
     busy: new Set(),
     scriptFilter: '',
 };
@@ -793,6 +795,7 @@ async function fetchJSON(url, opts) {
 async function loadIndex() {
     const data = await fetchJSON('/api/index');
     state.chapters = data.chapters;
+    state.extras = data.extras || [];
     state.docPages = data.docs;
     renderNav();
     if (state.chapters.length) {
@@ -812,6 +815,15 @@ function renderNav() {
             `Chapter ${String(ch.number).padStart(2, '0')}`,
             `${ch.figure_count}/${ch.scripts.length}`,
             ch.subtitle,
+        ));
+    }
+    nav.appendChild(navSection('Extras'));
+    for (const extra of state.extras) {
+        nav.appendChild(navButton(
+            `extra-${extra.slug}`,
+            extra.title,
+            `${extra.figure_count}/${extra.scripts.length}`,
+            extra.slug,
         ));
     }
     nav.appendChild(navSection('Documentation'));
@@ -866,6 +878,8 @@ function activate(id) {
         renderAbout(content);
     } else if (id.startsWith('chapter-')) {
         renderChapter(content, parseInt(id.slice('chapter-'.length), 10));
+    } else if (id.startsWith('extra-')) {
+        renderExtra(content, id.slice('extra-'.length));
     } else if (id.startsWith('doc-')) {
         renderDoc(content, id.slice('doc-'.length));
     }
@@ -874,19 +888,22 @@ function activate(id) {
 function renderAbout(root) {
     const scriptTotal = state.chapters.reduce((acc, c) => acc + c.scripts.length, 0);
     const figureTotal = state.chapters.reduce((acc, c) => acc + c.figure_count, 0);
+    const extraScriptTotal = state.extras.reduce((acc, c) => acc + c.scripts.length, 0);
+    const extraFigureTotal = state.extras.reduce((acc, c) => acc + c.figure_count, 0);
     root.innerHTML = `
         <h2><span class="accent-bar"></span>About this UI</h2>
         <p class="lead">A local browser front end for the chapter orchestrators.</p>
         <div class="metrics">
             <div class="metric"><div class="label">Chapters</div><div class="value">${state.chapters.length}</div></div>
             <div class="metric"><div class="label">Scripts</div><div class="value">${scriptTotal}</div></div>
-            <div class="metric"><div class="label">Cached figures</div><div class="value">${figureTotal}</div></div>
+            <div class="metric"><div class="label">Extras</div><div class="value">${state.extras.length}</div></div>
+            <div class="metric"><div class="label">Cached figures</div><div class="value">${figureTotal + extraFigureTotal}</div></div>
             <div class="metric accent"><div class="label">Docs linked</div><div class="value">${state.docPages.length}</div></div>
         </div>
         <div class="markdown">
             <p>This page is served by <code>active_inference.web</code>, a stdlib-only
             HTTP server that shares discovery with the text menu (<code>./run.sh</code>).
-            Pick a chapter on the left to browse its figures, animations, and the
+            Pick a chapter or extras topic on the left to browse its figures and the
             scripts that produced them.</p>
             <p>The <strong>Render</strong> button on each script re-runs the
             orchestrator with <code>--save</code> under <code>MPLBACKEND=Agg</code>;
@@ -986,6 +1003,51 @@ async function renderChapter(root, number) {
     }
 }
 
+async function renderExtra(root, topic) {
+    try {
+        const data = await fetchJSON(`/api/extra/${encodeURIComponent(topic)}`);
+        state.extraCache.set(topic, data);
+        const visualizations = data.scripts.filter(s => s.kind === 'visualize');
+        const examples = data.scripts.filter(s => s.kind !== 'visualize' && s.kind !== 'interactive');
+        const interactives = data.scripts.filter(s => s.kind === 'interactive');
+        const staticFigs = data.figures.filter(f => f.kind !== 'animation');
+
+        root.innerHTML = `
+            <h2><span class="accent-bar"></span>${escapeHtml(data.title)}
+                <span style="color:var(--muted);font-weight:400;font-size:15px;margin-left:8px">extras</span></h2>
+            <p class="lead"><code>${escapeHtml(data.relative)}</code> ·
+                ${data.scripts.length} scripts · ${data.figures.length} rendered files</p>
+            <div class="metrics">
+                <div class="metric"><div class="label">Visualizations</div><div class="value">${visualizations.length}</div></div>
+                <div class="metric"><div class="label">Other scripts</div><div class="value">${examples.length}</div></div>
+                <div class="metric"><div class="label">Interactive</div><div class="value">${interactives.length}</div></div>
+                <div class="metric accent"><div class="label">Cached figures</div><div class="value">${data.figures.length}</div></div>
+            </div>
+
+            <div class="search-row">
+                <input id="script-filter" type="text"
+                       placeholder="Filter scripts and figures by name or docstring..." autocomplete="off" />
+                <span class="hint">press <kbd>/</kbd> to focus · <kbd>Esc</kbd> to clear</span>
+            </div>
+
+            <h3>Figures <span class="count">· ${staticFigs.length} static</span></h3>
+            <div id="figures-static"></div>
+
+            <h3>Topic scripts <span class="count">· ${data.scripts.length}</span></h3>
+            <div id="extras-scripts-section"></div>
+
+            ${data.readme_html ? `<h3>Topic README</h3>
+            <div class="markdown">${data.readme_html}</div>` : ''}
+        `;
+
+        renderGallery($('#figures-static'), staticFigs, null);
+        renderScriptList($('#extras-scripts-section'), data.scripts, null, topic);
+        wireFilter();
+    } catch (err) {
+        root.innerHTML = `<div class="empty">Failed to load extras topic: ${escapeHtml(err.message)}</div>`;
+    }
+}
+
 function renderGallery(host, figures, chapter) {
     if (!host) return;
     host.innerHTML = '';
@@ -1036,7 +1098,7 @@ function renderGallery(host, figures, chapter) {
     host.appendChild(grid);
 }
 
-function renderScriptList(host, scripts, chapter) {
+function renderScriptList(host, scripts, chapter, topic = '') {
     if (!host) return;
     host.innerHTML = '';
     if (!scripts.length) {
@@ -1075,10 +1137,10 @@ function renderScriptList(host, scripts, chapter) {
             </div>
         `;
         row.querySelector('[data-action="cmd"]').addEventListener('click',
-            () => showCommandDialog(s, chapter));
+            () => showCommandDialog(s, chapter, topic));
         row.querySelector(`[data-action="${primaryAction}"]`).addEventListener('click',
             (ev) => interactive ? launchInteractive(s, ev.currentTarget)
-                                : runScript(s, chapter, ev.currentTarget));
+                                : runScript(s, chapter, ev.currentTarget, topic));
         wrap.appendChild(row);
     }
     host.appendChild(wrap);
@@ -1142,26 +1204,28 @@ function applyFilter(q) {
     });
 }
 
-async function runScript(script, chapter, btn) {
+async function runScript(script, chapter, btn, topic = '') {
     if (state.busy.has(script.name)) return;
     state.busy.add(script.name);
     const original = btn.textContent;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Rendering';
     let result = null;
+    const payload = topic ? { topic, script: script.name } : { chapter, script: script.name };
     try {
         result = await fetchJSON('/api/run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chapter, script: script.name }),
+            body: JSON.stringify(payload),
         });
         if (result.returncode === 0) {
             toast(`Rendered ${script.name}`, 'good');
         } else {
             toast(`${script.name} exited ${result.returncode}`, 'bad', 6000);
         }
-        if (state.activeTab === `chapter-${chapter}`) {
-            // Re-render the chapter to refresh figures + metadata.
+        const expectedTab = topic ? `extra-${topic}` : `chapter-${chapter}`;
+        if (state.activeTab === expectedTab) {
+            // Re-render the current tab to refresh figures + metadata.
             activate(state.activeTab);
         }
     } catch (err) {
@@ -1204,7 +1268,10 @@ async function launchInteractive(script, btn) {
     }
 }
 
-function showCommandDialog(script, chapter) {
+function showCommandDialog(script, chapter, topic = '') {
+    const outputHint = topic
+        ? `# output/figures/extras/${topic}/`
+        : `# output/figures/chapter_${String(chapter).padStart(2, '0')}/`;
     const lines = script.kind === 'interactive'
         ? [
             `# Open ${script.name} in an interactive matplotlib window.`,
@@ -1213,11 +1280,12 @@ function showCommandDialog(script, chapter) {
         ]
         : [
             `# Re-render ${script.name} into`,
-            `# output/figures/chapter_${String(chapter).padStart(2, '0')}/`,
+            outputHint,
             `uv run python ${script.relative} --save`,
             ``,
             `# Or via the text menu:`,
-            `./run.sh --script ${script.name.replace('.py', '')}`,
+            topic ? `uv run python -m active_inference.menu --extra ${topic}`
+                  : `./run.sh --script ${script.name.replace('.py', '')}`,
         ];
     const cmd = lines.join('\n');
     openDialog({

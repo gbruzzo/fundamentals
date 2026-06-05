@@ -26,8 +26,9 @@ The codebase follows a two-layer architecture:
   `visualizations`, `utils`, plus the strict-UI peers `menu` (stdlib text
   menu) and `web` (stdlib local web server).
 - **Layer 2 (orchestrators):** `chapters/chapter_01/` through
-  `chapters/chapter_10/` — thin scripts (≤ ~120 lines each) that wire
-  library components together to produce figures and numerical results.
+  `chapters/chapter_10/` plus `extras/<topic>/` — thin scripts (≤ ~120
+  lines each) that wire library components together to produce figures and
+  numerical results.
 
 All business logic lives in `src/`. Scripts orchestrate; they do not contain
 domain logic.
@@ -39,10 +40,10 @@ domain logic.
 | `run.sh` | Top-level thin wrapper around the chapter-runner text menu. |
 | `pyproject.toml` / `uv.lock` | PEP 621 metadata; uv is the recommended package manager. |
 | `src/active_inference/` | Python package (import as `active_inference`) |
-| `src/active_inference/core/` | Distributions, generative process/model, exact inference, LGS, diagnostics, composition, posterior protocol, validators, variational free energy (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), continuous active inference (Ch.7), continuous learning/attention/hierarchy (Ch.8), discrete POMDP + learning + factorial/hierarchical depth (Ch.9–10) in `pomdp.py` |
+| `src/active_inference/core/` | Distributions, generative process/model, exact inference, LGS, diagnostics, composition, posterior protocol, validators, variational free energy (Ch.4), thermodynamic/FEP bridge helpers, predictive coding (Ch.5), generalized filtering (Ch.6), continuous active inference (Ch.7), continuous learning/attention/hierarchy (Ch.8), discrete POMDP + learning + factorial/hierarchical depth (Ch.9–10) in `pomdp.py` |
 | `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, EM/factor analysis, variational inference (Ch.4), predictive coding (Ch.5), generalized filtering (Ch.6), active inference (Ch.7), continuous learning/attention (Ch.8), POMDP planning + learning + two-armed bandit + hierarchical agent (Ch.9–10) |
 | `src/active_inference/visualizations/` | Static plots, Ch.4 variational figures, the composable Ch.4–10 `unified` layer, interactive slider widgets, matplotlib animations, diagnostic figures, repo-wide colourblind-safe style |
-| `src/active_inference/utils/` | Grid constructors, logger factory, path helpers, and `save_chapter_data` NPZ+JSON export helpers |
+| `src/active_inference/utils/` | Grid constructors, logger factory, path helpers, and `save_chapter_data` / `save_extra_data` NPZ+JSON export helpers |
 | `src/active_inference/menu/` | Stdlib-only text menu used by `run.sh` |
 | `src/active_inference/web/` | Stdlib-only local HTTP server used by `run.sh --web` |
 | `chapters/chapter_01/` | 4 orchestrator scripts for Part I Ch. 1 concepts |
@@ -55,11 +56,12 @@ domain logic.
 | `chapters/chapter_08/` | learning, attention, and hierarchy in continuous state-spaces (§8.1–8.6) |
 | `chapters/chapter_09/` | discrete POMDP active inference (§9.1–§9.6) |
 | `chapters/chapter_10/` | learning & extensions (§10.1–10.4): 8 examples + 1 visualization + 3 animations |
+| `extras/` | cross-cutting topic orchestrators beyond the chapter spine, generated from the `active_inference.extra_topics` registry |
 | `tests/` | pytest unit tests + chapter smoke tests |
 | `docs/` | Architecture, notation, chapter concept maps, topic walkthroughs, uv workflow |
 | `scripts/` | Batch figure renderer (`run_all_figures.py`) + per-chapter shell wrappers |
 | `output/figures/` | Generated PNGs/GIFs (gitignored, regenerated via scripts) |
-| `output/data/` | Generated raw-data NPZ arrays plus JSON metadata/manifests for every saved non-interactive chapter artifact |
+| `output/data/` | Generated raw-data NPZ arrays plus JSON metadata/manifests for every saved non-interactive chapter or extras artifact |
 
 ## Ground Truth Sources
 
@@ -76,16 +78,18 @@ domain logic.
 
 - All variances are *variances*, not standard deviations.
 - Densities are evaluated on 1-D NumPy grids; integration uses `np.trapezoid`.
-- Every chapter script accepts `--save` for headless rendering; stochastic
-  scripts also accept `--seed` for reproducibility.
-- With `--save`, every non-interactive chapter script must produce both the
-  visual artifact and at least one `output/data/chapter_NN/<stem>.npz` +
-  `<stem>.json` sidecar. Use `save_chapter_data` directly for bespoke exports
-  or the shared visualization save helpers for figure-derived exports.
+- Every chapter and extras script accepts `--save` for headless rendering;
+  stochastic scripts also accept `--seed` for reproducibility.
+- With `--save`, every non-interactive chapter or extras script must produce
+  both the visual artifact and at least one raw-data sidecar. Chapters write
+  `output/data/chapter_NN/<stem>.npz` + `<stem>.json`; extras write
+  `output/data/extras/<topic>/<stem>.npz` + `<stem>.json`. Use
+  `save_chapter_data` / `save_extra_data` directly for bespoke exports or the
+  shared visualization save helpers for figure-derived exports.
 - Random number generators are passed explicitly via `numpy.random.Generator`
   — no global state.
-- Chapter scripts import only from `active_inference` or the Python standard
-  library — never from other chapter scripts.
+- Chapter and extras scripts import only from `active_inference` or the Python
+  standard library — never from other chapter or extras scripts.
 - `MPLBACKEND=Agg` is used in all CI and smoke-test contexts so no display is
   required.
 
@@ -104,6 +108,9 @@ uv run pytest tests/chapters -v
 # Validate generated raw-data sidecars
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10
 
+# Validate all generated chapter and extras raw-data sidecars
+uv run python scripts/validate_raw_data_exports.py --root output/data
+
 # Coverage
 uv run pytest --cov=active_inference --cov-report=term-missing
 ```
@@ -116,13 +123,16 @@ that mainly glue imports).
 1. Add a method or class to the appropriate `src/active_inference/` submodule
    (with corresponding unit tests in `tests/<sub>/`).
 2. Create a thin orchestrator in the appropriate `chapters/chapter_<N>/`
-   directory (≤ ~120 lines; imports only from `active_inference`).
+   directory or `extras/<topic>/` directory (≤ ~120 lines; imports only from
+   `active_inference`).
 3. Accept `--save`; add `--seed` whenever the script samples or otherwise
    depends on pseudo-randomness.
-4. Document the script in the chapter's `README.md`.
+4. Document the script in the chapter or extras topic `README.md`.
 5. Ensure `--save` writes reconstructable raw data. Prefer plotting through
    `save_or_show` / `save_animation`; if the script has non-plotted arrays,
-   call `save_chapter_data(chapter, stem, arrays, metadata, figures=...)`.
+   call `save_chapter_data(chapter, stem, arrays, metadata, figures=...)` for
+   chapter scripts or `save_extra_data(topic, stem, arrays, metadata,
+   figures=...)` for extras.
 6. The `tests/chapters/test_smoke.py` parametrize globs and the
    `active_inference.menu` discovery both pick the file up automatically
    as long as it follows the `example_*.py` / `animation_*.py` /

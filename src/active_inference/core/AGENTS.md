@@ -15,6 +15,10 @@ multiple downstream layers will need:
   module if the class set grows past ~3).
 - A new closed-form inference recipe → new module beside `lgs.py`
   (e.g., `kalman.py`, `hierarchical.py`).
+- A new free-energy decomposition, factor-graph primitive, ergodic-density
+  helper, or thermodynamic analogy belongs in the existing
+  `free_energy_forms.py`, `factor_graph.py`, `ergodic.py`, or
+  `thermodynamics.py` modules unless it is large enough to justify a split.
 
 If the addition is an *algorithm* over an existing model, it belongs in
 `estimators/` instead.
@@ -37,7 +41,7 @@ If the addition is an *algorithm* over an existing model, it belongs in
    - one happy-path test against a hand-computed value,
    - one validation test that raises on bad input,
    - one numerical-stability test (large / small variances, batched input).
-4. Mention it in `docs/core.md` and the public-surface `__init__.py`.
+4. Mention it in `docs/reference/core.md` and the public-surface `__init__.py`.
 
 ## Dependency graph
 

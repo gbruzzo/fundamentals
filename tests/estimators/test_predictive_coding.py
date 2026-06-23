@@ -21,6 +21,7 @@ from active_inference.core.predictive_coding import (
     QuadraticFunction,
     predictive_coding_free_energy,
 )
+from active_inference.core.predictive_coding import pc_linear_fixed_point
 from active_inference.estimators.predictive_coding import (
     HierarchicalPCModel,
     HierarchicalPCResult,
@@ -28,6 +29,7 @@ from active_inference.estimators.predictive_coding import (
     PredictiveCodingResult,
     hierarchical_predictive_coding,
     multivariate_predictive_coding,
+    pc_multivariate_linear_fixed_point,
     predictive_coding_inference,
 )
 
@@ -143,6 +145,74 @@ class TestMultivariatePC:
         # near-flat prior → MLE: g(x)=y ⇒ x = A⁻¹(y−b)
         expected = np.linalg.solve(A, y - b)
         assert np.allclose(r.mu_star, expected, atol=1e-2)
+
+    def test_records_prediction_error_traces(self) -> None:
+        # ISC-4/ISC-5: the result carries (T, D)/(T, C) error traces that decay.
+        A = np.array([[2.0, 0.5], [-0.3, 1.5]])
+        b = np.array([1.0, -1.0])
+        x_true = np.array([2.0, -1.0])
+        y = A @ x_true + b
+
+        def g(x):
+            return A @ x + b
+
+        r = multivariate_predictive_coding(
+            g, lambda x: A, y, np.zeros(2),
+            precision_y=np.array([1.0, 1.0]), precision_x=np.array([1e-4, 1e-4]),
+            kappa=0.05, n_iter=5000,
+        )
+        T = r.mus.shape[0]
+        assert r.eps_y.shape == (T, 2)
+        assert r.eps_x.shape == (T, 2)
+        # Sensory error magnitude shrinks from initialization to fixed point.
+        assert r.eps_y_norm[-1] < r.eps_y_norm[0]
+        # Under this near-flat prior the STATE error grows: the belief leaves m_x=0
+        # to fit the data (prior↔likelihood trade-off) — so "both decay to zero" is
+        # the wrong narrative, and the plotter docstring says so.
+        assert r.eps_x_norm[-1] > r.eps_x_norm[0]
+        # The final sensory error matches y − g(μ*) recomputed independently.
+        assert np.allclose(r.eps_y[-1], y - g(r.mu_star), atol=1e-9)
+
+
+class TestMultivariateLinearOracle:
+    def test_reduces_to_scalar_fixed_point(self) -> None:
+        # ISC-2: the matrix oracle equals the scalar pc_linear_fixed_point on 1-D.
+        model = linear_pc()  # g(x)=2x+3, σ_y²=0.25, m_x=4, s_x²=0.25
+        scalar = pc_linear_fixed_point(model, Y_OBS)
+        vec = pc_multivariate_linear_fixed_point(
+            np.array([[2.0]]), np.array([3.0]), np.array([Y_OBS]), np.array([4.0]),
+            precision_y=1 / 0.25, precision_x=1 / 0.25,
+        )
+        assert float(vec[0]) == pytest.approx(scalar, abs=1e-9)
+
+    def test_matches_iterative_fixed_point(self) -> None:
+        # ISC-3: closed-form oracle == iterative multivariate fixed point (coupled A).
+        A = np.array([[2.0, 0.5], [-0.3, 1.5]])
+        b = np.array([1.0, -1.0])
+        y = A @ np.array([2.0, -1.0]) + b
+        m_x = np.array([0.5, -0.5])
+        precision_y = np.array([1.5, 0.8])
+        precision_x = np.array([0.3, 0.7])
+        oracle = pc_multivariate_linear_fixed_point(
+            A, b, y, m_x, precision_y=precision_y, precision_x=precision_x)
+        # Tight tol + ample iterations so the descent reaches the fixed point
+        # (the |ΔF|<tol stop otherwise halts ~5e-5 short on this slow config).
+        r = multivariate_predictive_coding(
+            lambda x: A @ x + b, lambda x: A, y, m_x,
+            precision_y=precision_y, precision_x=precision_x,
+            kappa=0.05, n_iter=100000, tol=1e-15,
+        )
+        assert np.allclose(r.mu_star, oracle, atol=1e-6)
+
+    def test_flat_prior_is_least_squares(self) -> None:
+        # Π_x → 0 ⇒ closed form reduces to the OLS inverse A⁻¹(y−b).
+        A = np.array([[2.0, 0.5], [-0.3, 1.5]])
+        b = np.array([1.0, -1.0])
+        y = A @ np.array([2.0, -1.0]) + b
+        oracle = pc_multivariate_linear_fixed_point(
+            A, b, y, np.zeros(2), precision_y=np.array([1.0, 1.0]),
+            precision_x=np.array([1e-9, 1e-9]))
+        assert np.allclose(oracle, np.linalg.solve(A, y - b), atol=1e-4)
 
 
 # ---------------------------------------------------------------------------

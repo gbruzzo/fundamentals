@@ -22,7 +22,7 @@ trace so the tests can assert monotonicity and oracle agreement.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable, Optional, Sequence
 
 import numpy as np
@@ -154,18 +154,37 @@ def predictive_coding_inference(
 
 @dataclass
 class MultivariatePCResult:
-    """Store vector predictive-coding trajectory, VFE trace, fixed point, and convergence."""
+    """Store vector predictive-coding trajectory, VFE trace, fixed point, and convergence.
+
+    Mirrors the univariate :class:`PredictiveCodingResult`: alongside the belief and
+    free-energy traces it records the **raw prediction errors** per iteration
+    (``eps_y = y − g(μ)`` sensory, ``eps_x = μ − m_x`` state — unweighted; the
+    precision weighting lives in the free energy), so the multivariate figure can
+    show how the prediction errors evolve, like the scalar case vectorized.
+    """
 
     mus: np.ndarray            # (n_iter+1, C)
     free_energies: np.ndarray  # (n_iter+1,)
     mu_star: np.ndarray        # (C,)
     converged: bool
     n_iter_run: int
+    eps_y: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))  # (n_iter+1, D)
+    eps_x: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))  # (n_iter+1, C)
 
     @property
     def final_free_energy(self) -> float:
         """Return the final value of the stored inference trajectory."""
         return float(self.free_energies[-1])
+
+    @property
+    def eps_y_norm(self) -> np.ndarray:
+        """Per-iteration sensory prediction-error magnitude ``‖ε_y‖₂``."""
+        return np.linalg.norm(self.eps_y, axis=1)
+
+    @property
+    def eps_x_norm(self) -> np.ndarray:
+        """Per-iteration state prediction-error magnitude ``‖ε_x‖₂``."""
+        return np.linalg.norm(self.eps_x, axis=1)
 
 
 def _as_precision(prec_or_var: np.ndarray, dim: int) -> np.ndarray:
@@ -206,9 +225,9 @@ def multivariate_predictive_coding(
 
         μ ← μ − κ (Π_x ε_x − J(μ)ᵀ Π_y ε_y)
 
-    ``precision_y`` / ``precision_x`` accept a scalar, a variance vector (→ diagonal
-    precision), or a full precision matrix. Reduces exactly to
-    :func:`predictive_coding_inference` on a 1-D problem.
+    ``precision_y`` / ``precision_x`` accept a scalar, a **precision** vector (used
+    as the diagonal of the precision matrix — *not* inverted), or a full precision
+    matrix. Reduces exactly to :func:`predictive_coding_inference` on a 1-D problem.
     """
     y = np.atleast_1d(np.asarray(y, dtype=float))
     m_x = np.atleast_1d(np.asarray(m_x, dtype=float))
@@ -224,19 +243,30 @@ def multivariate_predictive_coding(
         eps_x = m - m_x
         return float(0.5 * eps_y @ Pi_y @ eps_y + 0.5 * eps_x @ Pi_x @ eps_x)
 
+    def errors(m: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        """Return ``(ε_y, ε_x)`` at belief ``m`` (sensory then state)."""
+        eps_y = y - np.atleast_1d(np.asarray(g(m), dtype=float))
+        eps_x = m - m_x
+        return eps_y, eps_x
+
+    eps_y0, eps_x0 = errors(mu)
     mus = [mu.copy()]
     fes = [free_energy(mu)]
+    eps_ys = [eps_y0]
+    eps_xs = [eps_x0]
     converged = False
     n_run = 0
 
     for _ in range(int(n_iter)):
-        eps_y = y - np.atleast_1d(np.asarray(g(mu), dtype=float))
-        eps_x = mu - m_x
+        eps_y, eps_x = errors(mu)
         J = np.atleast_2d(np.asarray(jacobian(mu), dtype=float)).reshape(D, C)
         grad = Pi_x @ eps_x - J.T @ Pi_y @ eps_y
         mu = mu - kappa * grad
+        eps_y_next, eps_x_next = errors(mu)
         mus.append(mu.copy())
         fes.append(free_energy(mu))
+        eps_ys.append(eps_y_next)
+        eps_xs.append(eps_x_next)
         n_run += 1
         if abs(fes[-2] - fes[-1]) < tol:
             converged = True
@@ -248,7 +278,56 @@ def multivariate_predictive_coding(
         mu_star=mu.copy(),
         converged=converged,
         n_iter_run=n_run,
+        eps_y=np.asarray(eps_ys),
+        eps_x=np.asarray(eps_xs),
     )
+
+
+def pc_multivariate_linear_fixed_point(
+    A: np.ndarray,
+    b: np.ndarray,
+    y: np.ndarray,
+    m_x: np.ndarray,
+    *,
+    precision_y: np.ndarray,
+    precision_x: np.ndarray,
+) -> np.ndarray:
+    r"""Closed-form recognition fixed point ``μ*`` for a **linear** ``g(x)=Ax+b``.
+
+    The matrix analogue of :func:`~active_inference.core.predictive_coding.pc_linear_fixed_point`.
+    Setting the gradient of the multivariate MAP free energy to zero,
+
+    .. math::
+        \frac{\partial\mathcal F}{\partial\mu}
+            = \Pi_x(\mu-m_x) - A^\top\Pi_y\,(y - A\mu - b) = 0,
+
+    gives the (precision-weighted) generalized least-squares / posterior mean
+
+    .. math::
+        \mu^* = (\Pi_x + A^\top\Pi_y A)^{-1}
+                \big(\Pi_x m_x + A^\top\Pi_y (y-b)\big).
+
+    For a near-flat prior (``Π_x → 0``) this reduces to the ordinary least-squares
+    inverse ``A⁻¹(y−b)`` (square invertible ``A``). It is the independent oracle for
+    :func:`multivariate_predictive_coding` on a linear model — the vector counterpart
+    of the cross-chapter scalar oracle.
+
+    ``precision_y`` / ``precision_x`` accept a scalar, a **precision** vector (used
+    as the diagonal of the precision matrix — *not* inverted), or a full precision
+    matrix, exactly like :func:`multivariate_predictive_coding` (both route through
+    the same ``_as_precision`` coercion, so the oracle cannot silently disagree with
+    the iterate).
+    """
+    A = np.atleast_2d(np.asarray(A, dtype=float))
+    b = np.atleast_1d(np.asarray(b, dtype=float))
+    y = np.atleast_1d(np.asarray(y, dtype=float))
+    m_x = np.atleast_1d(np.asarray(m_x, dtype=float))
+    D, C = A.shape
+    Pi_y = _as_precision(precision_y, D)
+    Pi_x = _as_precision(precision_x, C)
+    lhs = Pi_x + A.T @ Pi_y @ A
+    rhs = Pi_x @ m_x + A.T @ Pi_y @ (y - b)
+    return np.linalg.solve(lhs, rhs)
 
 
 # ===========================================================================

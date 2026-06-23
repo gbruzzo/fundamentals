@@ -78,7 +78,13 @@ orchestrator in `chapters/chapter_05/`.
   `F` (both verified as oracles).
 * **Multivariate PC** generalizes to vector states with update
   `μ ← μ − κ(Π_x ε_x − Jᵀ Π_y ε_y)`, where `J` is the Jacobian of `g` and `Π` are
-  precision matrices. Reduces exactly to the scalar case (tested to 1e-6).
+  precision matrices. Reduces exactly to the scalar case (tested to 1e-6). For a
+  linear `g(x)=Ax+b` the fixed point has a closed form,
+  `μ* = (Π_x + AᵀΠ_yA)⁻¹(Π_x m_x + AᵀΠ_y(y−b))` — the vector counterpart of
+  `pc_linear_fixed_point`, exposed as `pc_multivariate_linear_fixed_point` and used
+  as the figure's oracle (it reduces to the least-squares inverse `A⁻¹(y−b)` under a
+  flat prior). The result also records per-iteration prediction-error traces so the
+  errors can be plotted, exactly like the scalar case.
 * **Hierarchical PC** stacks `L+1` layers with `μ^{[0]}=y` clamped. Each layer
   predicts the one below (`ε^{[l]} = μ^{[l]} − g^{[l+1]}(μ^{[l+1]})`); the top is
   **unconstrained** (`m_x=0 ⇒ ε^{[L]}=μ^{[L]}`, book p.306). The summed VFE
@@ -134,6 +140,7 @@ renders through one vocabulary:
 |----------|------------|---------|
 | `plot_recognition_dynamics(result, ...)` | descent figures | **either** a Ch.4 `FixedFormResult` (2 panels) **or** a Ch.5 `PredictiveCodingResult` (3 panels) — duck-typed on `.mus` / `.free_energies` / `.eps_*` |
 | `plot_prediction_errors(model, y, grid, ...)` | Fig. 5.1.2 | a `PredictiveCodingModel` |
+| `plot_multivariate_pc(result, truth=, oracle=)` | §5.3 (3 panels) | a `MultivariatePCResult` — per-component belief with truth/oracle lines, ‖ε_x‖/‖ε_y‖ decay, free-energy descent |
 | `plot_hierarchical_pc(result, ...)` | Fig. 5.4.4 | a `HierarchicalPCResult` |
 | `panel_grid`, `finalize`, `layer_colors` | — | styling primitives every panel routes through |
 

@@ -364,6 +364,7 @@ from .estimators.predictive_coding import (
     PredictiveCodingResult,
     hierarchical_predictive_coding,
     multivariate_predictive_coding,
+    pc_multivariate_linear_fixed_point,
     predictive_coding_inference,
 )
 from .estimators.generalized_filtering import (
@@ -630,6 +631,7 @@ __all__ = [
     "predictive_coding_inference",
     "PredictiveCodingResult",
     "multivariate_predictive_coding",
+    "pc_multivariate_linear_fixed_point",
     "MultivariatePCResult",
     "hierarchical_predictive_coding",
     "HierarchicalPCModel",

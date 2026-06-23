@@ -36,6 +36,7 @@ __all__ = [
     "layer_colors",
     "plot_recognition_dynamics",
     "plot_prediction_errors",
+    "plot_multivariate_pc",
     "plot_hierarchical_pc",
     "plot_generalized_filter",
     "plot_correlated_embedding_precision",
@@ -467,6 +468,114 @@ def plot_prediction_errors(
     )
     finalize(ax, xlabel=r"$\mu_x$", ylabel="squared weighted error",
              title="prediction errors trade off", legend_loc="upper left")
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# §5.3 — multivariate predictive coding (vector state, Jacobian, precision matrices)
+# ---------------------------------------------------------------------------
+
+
+def plot_multivariate_pc(
+    result,
+    *,
+    truth: Optional[Sequence[float]] = None,
+    oracle: Optional[Sequence[float]] = None,
+    title: str = "§5.3 · multivariate predictive coding",
+):
+    r"""Unified descent figure for :func:`multivariate_predictive_coding` (book §5.3).
+
+    The vector analogue of :func:`plot_recognition_dynamics`: it brings the §5.3
+    figure into the same annotated vocabulary as the rest of Chapter 5, with three
+    panels —
+
+    1. each belief component ``μ_c`` vs iteration, with optional ``truth`` (dashed)
+       and ``oracle`` (dotted, e.g. the closed-form
+       :func:`~active_inference.estimators.predictive_coding.pc_multivariate_linear_fixed_point`)
+       reference lines and a μ* / ‖μ*−oracle‖ stat box;
+    2. the **prediction-error magnitudes** ``‖ε_x‖`` (state) and ``‖ε_y‖`` (sensory)
+       evolving — the sensory error ``‖ε_y‖`` falls as the belief explains the data,
+       while the state error ``‖ε_x‖`` reflects the prior↔likelihood trade-off (it
+       can *grow* under a near-flat prior as the belief leaves ``m_x`` to fit the
+       data); drawn only if the result carries ``eps_x`` / ``eps_y`` traces;
+    3. the free energy ``𝓕`` falling, with ``F₀ → F*``, ``ΔF`` and the empirical
+       convergence rate.
+
+    Returns the :class:`matplotlib.figure.Figure`.
+    """
+    mus = np.asarray(result.mus, dtype=float)            # (T, C)
+    fes = np.asarray(result.free_energies, dtype=float)  # (T,)
+    if mus.ndim != 2:
+        raise TypeError("multivariate result must expose a 2-D `mus` (T, C) trace")
+    eps_x = _trace(result, "eps_x")
+    eps_y = _trace(result, "eps_y")
+    has_errors = (eps_x is not None and eps_x.size and
+                  eps_y is not None and eps_y.size)
+
+    T, C = mus.shape
+    it = np.arange(T)
+    mu_star = mus[-1]
+    truth_arr = None if truth is None else np.asarray(truth, dtype=float)
+    oracle_arr = None if oracle is None else np.asarray(oracle, dtype=float)
+    converged = bool(getattr(result, "converged", True))
+    n_iter = int(getattr(result, "n_iter_run", T - 1))
+    comp_colors = layer_colors(C)
+
+    n_panels = 3 if has_errors else 2
+    fig, axes = panel_grid(n_panels, title=title, figsize=(5.2 * n_panels, 4.8))
+
+    # Panel 1 — per-component belief trajectories with truth / oracle landmarks.
+    ax = axes[0]
+    for c in range(C):
+        ax.plot(it, mus[:, c], color=comp_colors[c], lw=2.6, label=rf"$\mu_{{{c + 1}}}$")
+        if truth_arr is not None:
+            ax.axhline(truth_arr[c], color=comp_colors[c], ls="--", lw=1.3)
+        if oracle_arr is not None:
+            ax.axhline(oracle_arr[c], color=comp_colors[c], ls=":", lw=1.6)
+    # Document the reference-line styles once in the legend (no per-component clutter).
+    if truth_arr is not None:
+        ax.plot([], [], color=COLORS["neutral"], ls="--", lw=1.3, label="truth $x^*$")
+    if oracle_arr is not None:
+        ax.plot([], [], color=COLORS["neutral"], ls=":", lw=1.6, label="oracle")
+    mu_str = "[" + ", ".join(f"{v:.3g}" for v in mu_star) + "]"
+    stats = [f"μ* = {mu_str}"]
+    if oracle_arr is not None:
+        stats.append(f"‖μ*−o‖ = {float(np.linalg.norm(mu_star - oracle_arr)):.2e}")
+    stats.append(f"iters = {n_iter} ({'conv' if converged else 'max'})")
+    annotate_stat_box(ax, "\n".join(stats), loc="center right")
+    finalize(ax, xlabel="iteration", ylabel=r"$\mu$", title="state estimate")
+
+    # Panel 2 — prediction-error magnitudes decaying (the §5.3 concept).
+    idx = 1
+    if has_errors:
+        ax = axes[idx]
+        ex = np.linalg.norm(eps_x, axis=1)
+        ey = np.linalg.norm(eps_y, axis=1)
+        ax.plot(it, ex, color=COLORS["state"], lw=2.6, label=r"$\|\varepsilon_x\|$ (state)")
+        ax.plot(it, ey, color=COLORS["sensory"], lw=2.6, label=r"$\|\varepsilon_y\|$ (sensory)")
+        ax.axhline(0.0, color=COLORS["neutral"], ls="--", lw=1.2)
+        annotate_stat_box(
+            ax,
+            f"‖εx‖→ {float(ex[-1]):.3e}\n‖εy‖→ {float(ey[-1]):.3e}",
+            loc="upper right",
+        )
+        finalize(ax, xlabel="iteration", ylabel="prediction-error magnitude",
+                 title="prediction errors")
+        idx += 1
+
+    # Panel 3 — free-energy descent.
+    ax = axes[idx]
+    ax.plot(it, fes, color=COLORS["data"], lw=2.6, label=r"$\mathcal{F}$", zorder=3)
+    f0, f_star = float(fes[0]), float(fes[-1])
+    annotate_point(ax, it[-1], f_star, rf"$\mathcal{{F}}^*={f_star:.3f}$",
+                   color=COLORS["data"], dx=-0.30 * len(it),
+                   dy=0.18 * (f0 - f_star + 1e-9))
+    fstats = [f"F₀ = {f0:.3f}", f"F* = {f_star:.3f}", f"ΔF = {f0 - f_star:.3f}"]
+    rate = _empirical_rate(fes)
+    if rate is not None:
+        fstats.append(f"rate≈ {rate:.3f}")
+    annotate_stat_box(ax, "\n".join(fstats), loc="upper right")
+    finalize(ax, xlabel="iteration", ylabel=r"$\mathcal{F}$", title="free energy descent")
     return fig
 
 

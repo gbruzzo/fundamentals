@@ -32,6 +32,8 @@ from active_inference.core.predictive_coding import (  # noqa: E402
 from active_inference.estimators.predictive_coding import (  # noqa: E402
     HierarchicalPCModel,
     hierarchical_predictive_coding,
+    multivariate_predictive_coding,
+    pc_multivariate_linear_fixed_point,
     predictive_coding_inference,
 )
 from active_inference.estimators.variational import fixed_form_vi  # noqa: E402
@@ -43,6 +45,7 @@ from active_inference.visualizations.unified import (  # noqa: E402
     plot_generalized_vector_filter,
     plot_learning_attention,
     plot_multivariate_active_inference,
+    plot_multivariate_pc,
     plot_policy_efe_decomposition,
     plot_prediction_errors,
     plot_recognition_dynamics,
@@ -438,4 +441,69 @@ class TestParameterLearningFigure:
         from active_inference.visualizations.unified import plot_parameter_learning
         res, _ = self._result()
         fig = plot_parameter_learning(res.A_history, res.a_confidence, symbol="A")
+        assert len(fig.axes) == 2
+
+
+class TestMultivariatePCFigure:
+    """plot_multivariate_pc — §5.3 routed through the unified vocabulary."""
+
+    @staticmethod
+    def _result():
+        A = np.array([[2.0, 0.5], [-0.3, 1.5]])
+        b = np.array([1.0, -1.0])
+        x_true = np.array([2.0, -1.0])
+        y = A @ x_true + b
+        precision_y = np.array([1.0, 1.0])
+        precision_x = np.array([1e-4, 1e-4])
+        res = multivariate_predictive_coding(
+            lambda x: A @ x + b, lambda x: A, y, np.zeros(2),
+            precision_y=precision_y, precision_x=precision_x, kappa=0.05, n_iter=5000,
+        )
+        oracle = pc_multivariate_linear_fixed_point(
+            A, b, y, np.zeros(2), precision_y=precision_y, precision_x=precision_x)
+        return res, x_true, oracle
+
+    def test_three_panels_with_error_traces(self) -> None:
+        res, x_true, oracle = self._result()
+        fig = plot_multivariate_pc(res, truth=x_true, oracle=oracle)
+        # Error traces present ⇒ 3 panels, each labelled with a legend.
+        assert len(fig.axes) == 3
+        assert all(ax.get_xlabel() for ax in fig.axes)
+        assert all(ax.get_legend() is not None for ax in fig.axes)
+
+    def test_panel1_plots_belief_components(self) -> None:
+        res, x_true, oracle = self._result()
+        fig = plot_multivariate_pc(res, truth=x_true, oracle=oracle)
+        belief_lines = [ln for ln in fig.axes[0].lines if ln.get_label().startswith(r"$\mu")]
+        assert len(belief_lines) == res.mus.shape[1]
+        # The plotted belief line IS the result's μ trace (not a redraw).
+        assert np.allclose(belief_lines[0].get_ydata(), res.mus[:, 0])
+
+    def test_error_panel_plots_both_error_norms(self) -> None:
+        res, x_true, oracle = self._result()
+        fig = plot_multivariate_pc(res, truth=x_true, oracle=oracle)
+        labels = [ln.get_label() for ln in fig.axes[1].lines]
+        assert any("varepsilon_x" in lab for lab in labels)
+        assert any("varepsilon_y" in lab for lab in labels)
+
+    def test_stat_box_quotes_real_mu_star_and_oracle_error(self) -> None:
+        res, x_true, oracle = self._result()
+        fig = plot_multivariate_pc(res, truth=x_true, oracle=oracle)
+        texts = " ".join(t.get_text() for t in fig.axes[0].texts)
+        # The real fixed point appears in the stat box, component by component.
+        for v in res.mu_star:
+            assert f"{v:.3g}" in texts
+        # The reported oracle gap matches the recomputed norm.
+        gap = float(np.linalg.norm(res.mu_star - oracle))
+        assert f"{gap:.2e}" in texts
+
+    def test_two_panels_without_error_traces(self) -> None:
+        # Back-compat: a result with empty eps traces falls back to 2 panels.
+        from active_inference.estimators.predictive_coding import MultivariatePCResult
+        bare = MultivariatePCResult(
+            mus=np.array([[0.0, 0.0], [1.0, -0.5], [2.0, -1.0]]),
+            free_energies=np.array([8.0, 1.0, 0.0]),
+            mu_star=np.array([2.0, -1.0]), converged=True, n_iter_run=2,
+        )
+        fig = plot_multivariate_pc(bare, truth=[2.0, -1.0])
         assert len(fig.axes) == 2

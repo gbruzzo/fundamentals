@@ -58,9 +58,9 @@ output/data/*
 output/data/**/*.csv
 output/data/**/*.json
 output/data/**/*.npz
-output/notebooks/**/*.ipynb
 !output/notebooks/
 !output/notebooks/README.md
 !output/notebooks/AGENTS.md
 !output/notebooks/**/
+!output/notebooks/**/*.ipynb
 /.cursor

@@ -10,8 +10,8 @@ from orchestrators instead.
 2. Discovery uses `active_inference.menu.runner` — the same inventory as
    smoke tests and `run_all_figures.py`, plus `interactive_*` scripts as
    markdown-only sections.
-3. Generated `.ipynb` files are gitignored; this `README.md` and `AGENTS.md`
-   are tracked.
+3. Generated `.ipynb` files are tracked in git for reading-group use; regenerate
+   with `scripts/export_notebooks.py` when orchestrators change.
 4. Interactive scripts are never executed inside exported notebook kernels.
 
 ## Regenerate

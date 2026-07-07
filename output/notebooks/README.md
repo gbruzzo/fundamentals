@@ -2,7 +2,8 @@
 
 One notebook per chapter, extras topic, and application demo. Each notebook
 sections mirror the runnable orchestrators in `chapters/`, `extras/`, and
-`demo/`. The directory is **fully regenerable** from source.
+`demo/`. Regenerate after orchestrator changes; committed copies are available
+on GitHub for reading-group use.
 
 ## Layout
 

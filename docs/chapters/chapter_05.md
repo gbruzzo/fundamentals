@@ -13,6 +13,40 @@ The running model is the same linear-Gaussian example used since Chapter 3
 chapter's code is that the PC fixed point lands on `μ = 2.4` — i.e. predictive
 coding, variational inference, and grid Bayes all converge on the same belief.
 
+## The recipe
+
+Every example in this chapter follows the same five steps; the
+`chapters/chapter_05/` scripts parameterize them differently.
+
+1. **Experimental setting** — the same food-size (`x`) / light-intensity (`y`)
+   domain as Chapters 2–4, reused so Chapter 4's exact grid posterior
+   `N(2.4, 0.05)` stays a valid oracle for the linear case.
+2. **Generative process & model** — a `PredictiveCodingModel` wraps a
+   `GenerativeFunction` (`LinearFunction` for the Ch.3/4-identical linear case,
+   `QuadraticFunction`/`GenericFunction` for the nonlinear §5.5 and §5.6
+   regimes) together with the prior `x ~ N(m_x, s_x²)` and precisions
+   `λ_x = 1/s_x²`, `λ_y = 1/σ_y²`, with observation `ŷ=7` clamped throughout.
+3. **Point-mass variational density** — commit to the simplest possible `q`:
+   a point mass at `μ_x` (the MAP/Laplace move). This collapses VFE to the
+   prediction-error free energy `F_MAP = ½(λ_y ε_y² + λ_x ε_x² + log σ_y² +
+   log s_x²)` (Eq. 7a), so "pick a `q`" from Chapter 4 becomes "pick a point
+   estimate" here.
+4. **Minimize VFE by prediction-error descent** — one of four algorithms
+   drives `F_MAP` down via the recognition-dynamics gradient (Eq. 16):
+   `predictive_coding_inference` (univariate), `multivariate_predictive_coding`
+   (vector state with Jacobian `J`), `pc_parameterized_lstsq_oracle`'s
+   flat-prior iterate (rectangular mixing matrix `Θ`), or
+   `hierarchical_predictive_coding` (simultaneous Jacobi updates across `L+1`
+   stacked layers).
+5. **Diagnostics / verification** — check the descent against an
+   **independent** oracle at every level: `gradient_check` confirms the
+   analytic gradient matches a central finite difference; `oracle_agreement`
+   confirms the linear fixed point equals both Chapter 4's variational
+   posterior mean and Chapter 1's grid Bayes posterior mean (`μ*=2.40000`,
+   swept across 144 configurations); `convergence_report` confirms `F` is
+   monotone non-increasing along the descent; and the hierarchical case is
+   checked against the book's Example 5.7 fixed point `[2,1,0]`, `Σ F = 0`.
+
 ## From VFE to the prediction-error form
 
 Fix the variational belief to a point mass at `μ_x` (the MAP/Laplace move, book
@@ -69,8 +103,10 @@ orchestrator in `chapters/chapter_05/`.
 | Algorithm | Key API | Book | Orchestrator |
 |-----------|---------|------|--------------|
 | Prediction-error visualization | `plot_prediction_errors(model, y, mu_grid, ...)` | §5.1 | `example_5_1_prediction_errors.py` |
+| Precision balance | `predictive_coding_free_energy` + `pc_linear_fixed_point` | §5.2 | `example_5_2_precision.py` |
 | Univariate PC (perception) | `predictive_coding_inference(model, y, ...)` | Alg. 5.2.1 | `example_5_4_recognition_dynamics.py` |
-| Multivariate PC | `multivariate_predictive_coding(g, jacobian, y, m_x, ...)` | §5.3 | `example_5_3_multivariate.py` |
+| Multivariate PC | `multivariate_predictive_coding(g, jacobian, y, m_x, ...)` | §5.3 / §5.5 | `example_5_3_multivariate.py` |
+| Parameterized PC | `pc_parameterized_lstsq_oracle(Theta, b, y, sign=)` | §5.6 | `example_5_6_parameterized.py` |
 | Hierarchical PC | `hierarchical_predictive_coding(model, y, ...)` | §5.4, Ex. 5.7 | `example_5_7_hierarchical.py` |
 
 * **Univariate PC** descends Eq. 16 from the prior mean. For a linear `g` the fixed
@@ -84,7 +120,21 @@ orchestrator in `chapters/chapter_05/`.
   `pc_linear_fixed_point`, exposed as `pc_multivariate_linear_fixed_point` and used
   as the figure's oracle (it reduces to the least-squares inverse `A⁻¹(y−b)` under a
   flat prior). The result also records per-iteration prediction-error traces so the
-  errors can be plotted, exactly like the scalar case.
+  errors can be plotted, exactly like the scalar case. `example_5_3_multivariate.py`
+  runs this linear case by default and the book's genuine §5.5 nonlinear model
+  `g(x)=x⊙x+1` under `--regime nonlinear` (recovered exactly against the √-inverse
+  oracle; the square special case of the parameterized §5.6 model below).
+* **Parameterized PC** (`example_5_6_parameterized.py`) is the book's faithful
+  multivariate model: a *nonlinear* element-wise-square drive through a **rectangular**
+  mixing matrix, `g(x)=Θ(x⊙x)+b` with `Θ ∈ R^{4×2}`, so a 2-D state is observed through
+  4 over-determined channels (`x*=[0.5, 2.5]`). Because `g` depends on `x` only through
+  `u=x⊙x`, a noiseless observation is inverted exactly by the least-squares recovery
+  `x* = sign ⊙ √(Θ⁺(y−b))`, computed independently by `pc_parameterized_lstsq_oracle`
+  and cross-checked against the flat-prior iterate to ~1e-6 (`--regime recover`). The
+  sign per component is unidentifiable from `g` (which is even in each `x_c`) and is
+  supplied explicitly. With the book's informative prior (`Σ_x=Σ_y=0.5 I`,
+  `--regime informative`) the MAP belief settles between the data-consistent state and
+  the prior mean `m_x=[1,1]` — the precision-weighted prediction-error balance.
 * **Hierarchical PC** stacks `L+1` layers with `μ^{[0]}=y` clamped. Each layer
   predicts the one below (`ε^{[l]} = μ^{[l]} − g^{[l+1]}(μ^{[l+1]})`); the top is
   **unconstrained** (`m_x=0 ⇒ ε^{[L]}=μ^{[L]}`, book p.306). The summed VFE
@@ -180,11 +230,31 @@ the *same* function animates a Chapter 4 `FixedFormResult` (2 panels) and a Chap
 `PredictiveCodingResult` (3 panels), duck-typed on the result's traces. `test_animations.py`
 validates panel counts, per-panel legends, and that strided GIFs render fewer frames.
 
+## Interactive
+
+`chapters/chapter_05/interactive_predictive_coding.py` (backed by
+`interactive_predictive_coding`) is a GUI / web-launchable slider explorer: sliders
+for `y`, `m_x`, `s_x²`, and `σ_y²` render the free-energy landscape `F(μ)` with its
+closed-form minimum `μ*` marked, alongside the two precision-weighted prediction
+errors. Dragging them slides `μ*` between the data-consistent state and the prior
+mean — the live, hands-on form of Example 5.2. Launch it from `./run.sh --web`.
+
 ## Where the book takes this next
 
 Chapter 5's recognition dynamics are *perception only* — inference about a static
-cause. Part II adds **time**: generalized coordinates and filtering (continuous
-state estimation), then **action** (active generalized filtering), where the same
-prediction-error machinery drives motor output, not just belief updates. The
-`GenerativeFunction` / precision interface here is exactly what those chapters
-extend.
+cause. Part II adds **time** in Chapter 6 (generalized coordinates and filtering,
+continuous state estimation), then **action** in Chapter 7 (active generalized
+filtering), where the same prediction-error machinery drives motor output, not just
+belief updates. The `GenerativeFunction` / precision interface here is exactly what
+those chapters extend.
+
+## See also
+
+- [`../topics/free_energy_principle.md`](../topics/free_energy_principle.md) — the
+  variational free energy this chapter's MAP/Laplace form is derived from.
+- [`../topics/gradient_descent.md`](../topics/gradient_descent.md) — recognition
+  dynamics (Eq. 16) *is* gradient descent, specialized to a precision-weighted
+  prediction-error gradient.
+- [`../topics/generative_models.md`](../topics/generative_models.md) — the
+  `GenerativeFunction` / `PredictiveCodingModel` split follows the same
+  process-vs-model separation described there.

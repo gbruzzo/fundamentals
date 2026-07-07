@@ -390,6 +390,37 @@ def gradient_check(
     return abs(float(grad(x0)) - numeric)
 
 
+def gradient_check_vector(
+    f: Callable[[np.ndarray], float],
+    grad: Callable[[np.ndarray], np.ndarray],
+    x0: np.ndarray,
+    *,
+    eps: float = 1e-6,
+) -> float:
+    r"""Max abs error between an analytic vector gradient and central finite differences.
+
+    The vector analogue of :func:`gradient_check`: for a scalar field
+    ``f: R^n → R`` it perturbs each coordinate independently and compares the
+    analytic ``grad(x0) ∈ R^n`` against the central difference
+    ``(f(x0 + eps e_i) − f(x0 − eps e_i)) / (2 eps)``.
+
+    This is what lets us *prove* the sign and scale of the multivariate recognition
+    gradient ``∂F/∂μ = Π_x ε_x − Jᵀ Π_y ε_y`` (book §5.3 Eq. 21) numerically rather
+    than transcribing it — including for over-determined, nonlinear generating
+    functions where no closed-form fixed point exists. Returns
+    ``max_i |analytic_i − numeric_i|`` (``< 1e-5`` is a pass for the smooth losses in
+    this package).
+    """
+    x0 = np.atleast_1d(np.asarray(x0, dtype=float))
+    analytic = np.atleast_1d(np.asarray(grad(x0), dtype=float))
+    numeric = np.empty_like(x0)
+    for i in range(x0.size):
+        step = np.zeros_like(x0)
+        step[i] = eps
+        numeric[i] = (float(f(x0 + step)) - float(f(x0 - step))) / (2.0 * eps)
+    return float(np.max(np.abs(analytic - numeric)))
+
+
 @dataclass(frozen=True)
 class ConvergenceReport:
     """Summary of a monotone-descent trace (free energy / loss over iterations).

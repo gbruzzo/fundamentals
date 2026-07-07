@@ -330,6 +330,79 @@ def pc_multivariate_linear_fixed_point(
     return np.linalg.solve(lhs, rhs)
 
 
+def pc_parameterized_lstsq_oracle(
+    Theta: np.ndarray,
+    b: np.ndarray,
+    y: np.ndarray,
+    *,
+    sign: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    r"""Independent recovery oracle for the parameterized model ``g(x)=Θ(x⊙x)+b`` (§5.6).
+
+    The book's parameterized multivariate generating function maps a hidden state
+    ``x ∈ R^C`` to an observation ``y ∈ R^D`` through a **rectangular** mixing matrix
+    ``Θ ∈ R^{D×C}`` acting on the *element-wise square* ``x⊙x``:
+
+    .. math::
+        g(x) = \Theta\,(x \odot x) + b .
+
+    Because ``g`` depends on ``x`` only through ``u = x \odot x``, a noiseless,
+    self-consistent observation ``y = g(x^*)`` satisfies the linear system
+    ``\Theta u^* = y - b`` exactly.  The (over-determined, ``D>C``) squared state is
+    therefore recovered by the least-squares solve ``u^* = \Theta^{+}(y-b)`` and the
+    state itself by ``x^* = \operatorname{sign} \odot \sqrt{u^*}`` — the sign of each
+    component is unidentifiable from ``g`` alone (``g`` is even in every ``x_c``), so it
+    is supplied by the caller (defaulting to ``+1``, i.e. the positive orthant that the
+    recognition dynamics settle into when initialised there).
+
+    For a noiseless, self-consistent ``y`` this coincides exactly with the flat-prior
+    fixed point of :func:`multivariate_predictive_coding` on this model (the residual
+    is zero, so no precision weighting can change the solution) — its independent
+    cross-check, the nonlinear, over-determined counterpart of
+    :func:`pc_multivariate_linear_fixed_point`.  For a *noisy* (inconsistent) ``y`` the
+    two coincide only when ``precision_y`` is **isotropic** (a scalar or scalar
+    multiple of the identity); a general diagonal/full ``precision_y`` makes the
+    recognition-dynamics fixed point solve the weighted normal equations
+    ``Θᵀ Π_y Θ u* = Θᵀ Π_y (y−b)``, which differs from this function's unweighted
+    least-squares solve. ``u^*`` is clipped at zero before the square root so a mildly
+    inconsistent (noisy) ``y`` still returns a real state.
+
+    Parameters
+    ----------
+    Theta : array (D, C)
+        Rectangular mixing matrix.
+    b : array (D,)
+        Additive observation offset.
+    y : array (D,)
+        Observation to invert.
+    sign : array (C,), optional
+        Per-component sign of the recovered state (``±1``); defaults to all ``+1``.
+
+    Returns
+    -------
+    array (C,)
+        The recovered hidden state ``x^*``.
+    """
+    Theta = np.atleast_2d(np.asarray(Theta, dtype=float))
+    b = np.atleast_1d(np.asarray(b, dtype=float))
+    y = np.atleast_1d(np.asarray(y, dtype=float))
+    D, C = Theta.shape
+    if b.shape[0] != D or y.shape[0] != D:
+        raise ValueError(
+            f"b and y must have length D={D} to match Theta; got {b.shape[0]} and {y.shape[0]}"
+        )
+    u_star, *_ = np.linalg.lstsq(Theta, y - b, rcond=None)
+    u_star = np.clip(u_star, 0.0, np.inf)
+    if sign is None:
+        sign_vec = np.ones(C)
+    else:
+        sign_vec = np.sign(np.atleast_1d(np.asarray(sign, dtype=float)))
+        sign_vec[sign_vec == 0.0] = 1.0
+        if sign_vec.shape[0] != C:
+            raise ValueError(f"sign must have length C={C}; got {sign_vec.shape[0]}")
+    return sign_vec * np.sqrt(u_star)
+
+
 # ===========================================================================
 # §5.4 — Hierarchical predictive coding (Eq. 30–34)
 # ===========================================================================

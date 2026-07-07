@@ -25,11 +25,11 @@ fundamentals/
 │   ├── web/                   ← stdlib local web UI launched by run.sh --web
 │   └── source_spine.py        ← PDF ledger: Ch.1-14, Appendices A-D, no Ch.15
 ├── chapters/
-│   ├── chapter_01/            ← 4 concept orchestrators
-│   ├── chapter_02/            ← examples 2.1–2.10 + auxiliary + 2 animations
-│   ├── chapter_03/            ← examples 3.1–3.7 + 8 animations + 3 diagnostic visualizations
+│   ├── chapter_01/            ← 4 concept orchestrators + 1 animation + 1 interactive
+│   ├── chapter_02/            ← examples 2.1–2.10 + auxiliary + 2 interactive + 2 animations
+│   ├── chapter_03/            ← examples 3.1–3.7 + 8 animations + 3 diagnostic visualizations + 2 interactive
 │   ├── chapter_04/            ← variational inference: 5 examples + 1 animation + 3 visualizations + interactive
-│   ├── chapter_05/            ← predictive coding: 4 examples + 2 animations (univariate / multivariate / hierarchical)
+│   ├── chapter_05/            ← predictive coding: 6 examples + 2 animations + 1 interactive (univariate / precision / multivariate / parameterized / hierarchical)
 │   ├── chapter_06/            ← generalized filtering for perception (Part II): 4 examples + 1 visualization (§6.1–§6.6)
 │   ├── chapter_07/            ← active generalized filtering (Part II): 2 examples + 1 animation (§7.1–§7.5)
 │   ├── chapter_08/            ← learning, attention, and hierarchy (Part II): 2 examples + 1 visualization + 1 animation (§8.1–8.6)
@@ -257,7 +257,7 @@ The PDF source-spine contract is checked separately by
 `scripts/validate_source_spine.py --require-pdf`: the inspected source has
 Chapters 1-14 and Appendices A-D, and no Chapter 15.
 
-**Chapter 1 — The Hypothesis-Testing Brain** (4 scripts)
+**Chapter 1 — The Hypothesis-Testing Brain** (6 scripts)
 
 | Script | What it shows |
 |---|---|
@@ -266,7 +266,7 @@ Chapters 1-14 and Appendices A-D, and no Chapter 15.
 | `03_bayes_intuition.py` | Bayes' theorem step-by-step on a single-state, single-observation toy |
 | `04_inverse_problem.py` | Non-injective generator → bi-modal posterior |
 
-**Chapter 2 — Hidden State Estimation** (10 examples + 2 auxiliary + 2 animations)
+**Chapter 2 — Hidden State Estimation** (10 examples + 1 auxiliary + 2 interactive + 2 animations)
 
 | Script | Mirrors | What it adds |
 |---|---|---|
@@ -282,10 +282,11 @@ Chapters 1-14 and Appendices A-D, and no Chapter 15.
 | `example_2_10_gradient_descent.py` | §2.5.2 | Iterative MLE / MAP via gradient descent |
 | `visualize_generative_model.py` | §2.4 | Heatmap and 3-D surface of `p(x, y)` |
 | `interactive_explorer.py` | bonus | Slider-driven exploration of the canonical model |
+| `interactive_gradient_descent.py` | §2.5.2 | Slider-driven GD trajectory scrubber: log-learning-rate slider recomputes the trajectory, iteration slider scrubs through it; readout reports iterate, loss, step size, converging/diverging status |
 | `animation_sequential.py` | bonus | Animated posterior tightening as N grows (GIF) |
 | `animation_gradient_descent.py` | bonus | Animated iterate rolling down the NLL (GIF) |
 
-**Chapter 3 — Combining Learning and Inference** (7 examples + 8 animations + 3 diagnostic visualizations)
+**Chapter 3 — Combining Learning and Inference** (7 examples + 8 animations + 3 diagnostic visualizations + 2 interactive)
 
 | Script | Mirrors | What it shows |
 |---|---|---|
@@ -307,6 +308,8 @@ Chapters 1-14 and Appendices A-D, and no Chapter 15.
 | `visualize_calibration.py` | diagnostic | Empirical-vs-nominal coverage curve for a BLR forecast |
 | `visualize_coverage.py` | diagnostic | Coverage sweep across credible levels |
 | `visualize_posterior_predictive.py` | diagnostic | Posterior predictive check on regression residuals |
+| `interactive_bayesian_regression.py` | Example 3.5 | Slider-driven BLR explorer: `N` and prior-precision sliders tighten the ±2σ posterior-predictive band; readout reports recovered `β0`/`β1` ± posterior std |
+| `interactive_lgs_localization.py` | Example 3.6 | Slider-driven 2-D LGS explorer: `(y1, y2)` observation sliders slide the posterior mean ellipse along the precision-weighted line to the fixed prior; readout reports posterior mean/std and distance from prior/observation |
 
 **Chapter 4 — Variational Bayesian Inference** (5 examples + 1 animation + 3 visualizations + 1 interactive)
 
@@ -323,16 +326,19 @@ Chapters 1-14 and Appendices A-D, and no Chapter 15.
 | `visualize_model_comparison.py` | §4.3 | Model evidence of a good vs bad model against the true input (Fig. 4.3.2/4.3.3) |
 | `interactive_vfe_explorer.py` | bonus | Slider-driven `(μ, σ²)` exploration of the live VFE decomposition |
 
-**Chapter 5 — Predictive Coding** (4 examples + 2 animations; univariate / multivariate / hierarchical)
+**Chapter 5 — Predictive Coding** (6 examples + 2 animations + 1 interactive; univariate / precision / multivariate / parameterized / hierarchical)
 
 | Script | Mirrors | What it shows |
 |---|---|---|
 | `example_5_1_prediction_errors.py` | §5.1 / Fig. 5.1.2 | Flat-prior MLE and the MAP free energy as two precision-weighted prediction errors |
+| `example_5_2_precision.py` | §5.2 / Fig. 5.1.4 | Precision balance: sweeps the book's three `(s_x², σ_y²)` settings; free-energy minimum slides between data `x*=2` and prior `m_x=4` as `λ_x/λ_y` changes, cross-checked against `pc_linear_fixed_point` |
 | `example_5_3_multivariate.py` | §5.3 | Multivariate predictive coding (vector state, Jacobian `g`) converges |
 | `example_5_4_recognition_dynamics.py` | Alg. 5.2.1 | Recognition dynamics (Eq. 16); `--linear` lands on the Ch.4 grid posterior mean `2.4` |
+| `example_5_6_parameterized.py` | §5.6 / Fig. 5.3.5 | Parameterized PC: rectangular `Θ` (4×2), nonlinear `g(x)=Θ(x⊙x)+b`, over-determined `R²→R⁴`; `--regime recover` (default) recovers `x*=[0.5, 2.5]` against the least-squares oracle, `--regime informative` shows the MAP prior trade-off |
 | `example_5_7_hierarchical.py` | Example 5.7 / §5.4 | Hierarchical PC converges to `[2,1,0]`, all layer errors → 0, `Σ F = 0` (Fig. 5.4.4) |
 | `animation_recognition_descent.py` | Alg. 5.2.1 | GIF: `μ_x` descending onto the oracle, errors decaying, `𝓕` falling (`--nonlinear` for Fig. 5.2.3) |
 | `animation_hierarchical.py` | Example 5.7 / Fig. 5.4.4 | GIF: layer beliefs settling to `[2,1,0]`, errors → 0, `Σ F → 0` |
+| `interactive_predictive_coding.py` | Example 5.2 | Slider-driven `F(μ)` landscape: `y`, `m_x`, `s_x²`, `σ_y²` sliders trade the two precision-weighted prediction errors, minimum `μ*` slides between data and prior |
 
 **Chapter 6 — Generalized Filtering for Perception** (Part II; §6.1–§6.6)
 

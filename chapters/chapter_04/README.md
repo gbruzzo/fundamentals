@@ -20,7 +20,7 @@ so the exact grid posterior `N(2.4, 0.05)` is available as an oracle.
 |--------|---------|---------------|
 | `example_4_1_coordinate_search.py` | Example 4.1 / Alg. 4.2.1 | Zero-order coordinate search descends the VFE surface (Fig. 4.2.2). |
 | `example_4_2_surprisal.py`         | §4.3        | Surprisal `−log p(y)` vs `y` and vs `p(y)` (Fig. 4.3.1). |
-| `example_4_3_vfe_forms.py`         | §4.4        | All five VFE forms agree; G/C/E decompositions over a descent (Fig. 4.4.1). |
+| `example_4_3_vfe_forms.py`         | §4.4        | All four VFE forms (G/D/C/E) agree; G/C/E decompositions over a descent (Fig. 4.4.1). |
 | `example_4_6_free_form_cavi.py`    | Example 4.6 / Alg. 4.5.1 | Free-form mean-field CAVI on `(x, β₀, β₁)`; VFE monotone non-increasing. |
 | `example_4_7_fixed_form.py`        | Example 4.7 / Alg. 4.6.1 | Fixed-form gradient VI converges to the exact posterior `N(2.4, 0.05)` (Fig. 4.6.1/4.6.2). |
 
@@ -30,14 +30,19 @@ so the exact grid posterior `N(2.4, 0.05)` is available as an oracle.
 |--------|---------------|
 | `animation_vfe_descent.py` | `q(x)` tightening onto the posterior as VFE falls to the surprisal bound `−log p(y)`. |
 
-### Visualizations & interactive
+### Visualizations
 
 | Script | What it shows |
 |--------|---------------|
 | `visualize_kl_loss.py`          | The KL loss surface vs the VFE surface (same minimum, no posterior needed). |
 | `visualize_vfe_intuition.py`    | G-form intuition: `q(x)`, `p(x, y)`, and the posterior (Fig. 4.2.3). |
 | `visualize_model_comparison.py` | Model evidence of a good vs bad model against the true input (Fig. 4.3.2/4.3.3). |
-| `interactive_vfe_explorer.py`   | Slider-driven `(μ, σ²)` exploration of the live VFE decomposition (skipped headless). |
+
+### Interactive (GUI / web-launchable)
+
+| Script | What it shows |
+|--------|---------------|
+| `interactive_vfe_explorer.py` | Sliders for `μ_x` and `σ_x²` move the variational density `q(x) = N(μ_x, σ_x²)` over the exact posterior; the live bar chart shows the VFE decomposition (free energy, divergence, complexity, accuracy) bottoming out exactly when `q` sits on the posterior. |
 
 ## Running
 

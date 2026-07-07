@@ -42,8 +42,15 @@ configurable building blocks from `active_inference`.
 | Script | What it shows |
 |--------|---------------|
 | `visualize_calibration.py`          | Empirical-vs-nominal coverage curve for a BLR forecast. |
-| `visualize_coverage.py`             | Coverage sweep across credible levels. |
+| `visualize_coverage.py`             | Empirical coverage of a fixed 95% LGS credible region as sample size N grows. |
 | `visualize_posterior_predictive.py` | Posterior predictive check on regression residuals. |
+
+### Interactive (GUI / web-launchable)
+
+| Script | What it shows |
+|--------|---------------|
+| `interactive_bayesian_regression.py` | Sliders for sample size `N` and prior precision tighten the ±2σ posterior-predictive band as evidence accumulates; readout reports recovered `β0`/`β1` ± posterior std. |
+| `interactive_lgs_localization.py` | Sliders for the 2-D observation `(y1, y2)` slide the posterior mean ellipse along the precision-weighted line to the fixed prior; readout reports posterior mean/std and distance from prior/observation. |
 
 ## Running
 

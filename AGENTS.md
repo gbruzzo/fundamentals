@@ -50,11 +50,11 @@ domain logic.
 | `src/active_inference/utils/` | Grid constructors, logger factory, path helpers, and `save_chapter_data` / `save_extra_data` NPZ+JSON export helpers |
 | `src/active_inference/menu/` | Stdlib-only text menu used by `run.sh` |
 | `src/active_inference/web/` | Stdlib-only local HTTP server used by `run.sh --web` |
-| `chapters/chapter_01/` | 4 orchestrator scripts for Part I Ch. 1 concepts |
-| `chapters/chapter_02/` | 10 examples + 2 auxiliary + 2 animations |
-| `chapters/chapter_03/` | 7 examples + 8 animations + 3 diagnostic visualizations |
+| `chapters/chapter_01/` | 4 concept orchestrators + 1 animation + 1 interactive for Part I Ch. 1 |
+| `chapters/chapter_02/` | 10 examples + 1 auxiliary + 2 animations + 2 interactive |
+| `chapters/chapter_03/` | 7 examples + 8 animations + 3 diagnostic visualizations + 2 interactive |
 | `chapters/chapter_04/` | 5 examples + 1 animation + 3 visualizations + 1 interactive (variational inference) |
-| `chapters/chapter_05/` | 4 examples + 2 animations (predictive coding) |
+| `chapters/chapter_05/` | 6 examples + 2 animations + 1 interactive (predictive coding) |
 | `chapters/chapter_06/` | generalized filtering for perception (§6.1–6.6), including correlated embedding orders and Example 6.7 |
 | `chapters/chapter_07/` | active generalized filtering / action (§7.1–7.5), including multivariate AIF in generalized coordinates |
 | `chapters/chapter_08/` | learning, attention, and hierarchy in continuous state-spaces (§8.1–8.6) |

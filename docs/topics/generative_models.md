@@ -64,6 +64,8 @@ print(result.summary())
 - [`bayesian_inference.md`](bayesian_inference.md) — the inversion step.
 - [`multivariate_gaussians.md`](multivariate_gaussians.md) — the
   multivariate machinery underpinning the MV classes.
+- [`../chapters/chapter_01.md`](../chapters/chapter_01.md) — the process /
+  model split introduced conceptually via the "agent in a box" scenario.
 - [`../chapters/chapter_02.md`](../chapters/chapter_02.md) — Examples
   2.1–2.10 that exercise these classes.
 - [`../reference/core.md`](../reference/core.md) — full API.

@@ -13,7 +13,7 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | `y`        | `y`, `y_obs`      | Observation produced by the generative process. |
 | `Y`        | `Y`               | Stacked observations as an `(N, D)` data matrix. |
 | `X`        | `X`               | Design matrix `(N, C)` (or `(N, C+1)` with intercept). |
-| `Θ` / `θ`  | `Theta` / `theta` | Mixing matrix (LGS / FA) or parameter vector (regression). |
+| `Θ` / `θ`  | `Theta` / `theta` | Mixing matrix (LGS / FA), parameter vector (regression), or the rectangular `D×C` mixing matrix of the §5.6 parameterized predictive-coding model `g(x)=Θ(x⊙x)+b`. |
 | `ζ`        | `mu_zeta`         | Log precision for Chapter 8 attention / second-order parameter learning. |
 | `μ̃_x`      | `mu_tilde`, `mus` | Generalized-coordinate hidden-state belief; public result tensors use `(time, embedding_order, variable)`. |
 | `ỹ`        | `y_tilde`, `y_tildes` | Generalized measurements built from observations and their finite-difference derivatives. |
@@ -71,7 +71,7 @@ descriptive — it explains how the symbols map to identifiers in the package.
 | Pipeline | `Pipeline`, `Pipeline.linear_gaussian`             | `core/compose.py` |
 | Running stats | `running_stats`, `RunningPosteriorStats`       | `core/compose.py` |
 | VFE (Ch.4) | `variational_free_energy`, `coordinate_search_vfe`, `fixed_form_vi`, `free_form_cavi` | `core/variational.py`, `estimators/variational.py` |
-| PC (Ch.5) | `predictive_coding_inference`, `multivariate_predictive_coding`, `hierarchical_predictive_coding`, `pc_free_energy_grad`, `pc_linear_fixed_point` | `core/predictive_coding.py`, `estimators/predictive_coding.py` |
+| PC (Ch.5) | `predictive_coding_inference`, `multivariate_predictive_coding`, `hierarchical_predictive_coding`, `predictive_coding_free_energy`, `pc_free_energy_grad`(`_fd`), `pc_linear_fixed_point`, `pc_multivariate_linear_fixed_point`, `pc_parameterized_lstsq_oracle`, `pc_curvature_linear` | `core/predictive_coding.py`, `estimators/predictive_coding.py` |
 | GF (Ch.6) | `generalized_filter`, `generalized_filter_gc`, `generalized_vector_filter`, `correlated_embedding_precision` | `core/generalized_filtering.py`, `estimators/generalized_filtering.py` |
 | AIF (Ch.7) | `simulate_active_inference`, `simulate_multivariate_active_inference`, `multivariate_action_gradient` | `core/active_inference.py`, `estimators/active_inference.py` |
 | AGF learning/attention (Ch.8) | `learning_attention_free_energy`, `simulate_learning_attention`, `hierarchical_message_terms` | `core/continuous_learning.py`, `estimators/continuous_learning.py` |

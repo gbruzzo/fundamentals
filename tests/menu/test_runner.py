@@ -35,7 +35,7 @@ class TestDiscovery:
         assert numbers == sorted(numbers)
         assert numbers[:3] == [1, 2, 3]
 
-    def test_chapter_1_has_four_concept_scripts(self) -> None:
+    def test_chapter_1_has_five_concept_scripts(self) -> None:
         scripts = runner.discover_scripts(1)
         names = [s.name for s in scripts]
         assert names == [
@@ -43,6 +43,7 @@ class TestDiscovery:
             "02_three_perspectives.py",
             "03_bayes_intuition.py",
             "04_inverse_problem.py",
+            "05_belief_from_stream.py",
         ]
         for s in scripts:
             assert s.kind == "concept"

@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from active_inference import get_logger, mle_linear_regression
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch3.ex3")
 
@@ -57,7 +58,7 @@ def main() -> None:
              sample_sizes[-1], np.round(last_estimate, 3))
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), constrained_layout=True)
-    axes[0].loglog(sample_sizes, errors, "o-", color="#1f77b4", lw=2)
+    axes[0].loglog(sample_sizes, errors, "o-", color=COLORS["prior"], lw=2)
     axes[0].set_xlabel("number of samples N")
     axes[0].set_ylabel(r"$\|\hat{\theta} - \theta^*\|_2$")
     axes[0].set_title("Estimation error decays with N")
@@ -66,9 +67,9 @@ def main() -> None:
     width = 0.35
     idx = np.arange(true_theta.size)
     axes[1].bar(idx - width / 2, true_theta, width=width,
-                color="#1f77b4", label="true")
+                color=COLORS["prior"], label="true")
     axes[1].bar(idx + width / 2, last_estimate, width=width,
-                color="#2ca02c", label=f"estimate (N={sample_sizes[-1]})")
+                color=COLORS["posterior"], label=f"estimate (N={sample_sizes[-1]})")
     axes[1].set_xticks(idx)
     axes[1].set_xticklabels([r"$\beta_0$"] +
                              [rf"$\beta_{{{i + 1}}}$"

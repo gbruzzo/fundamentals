@@ -27,6 +27,7 @@ from active_inference.estimators.linear_regression import (
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch3.ex2")
 
@@ -82,7 +83,7 @@ def main() -> None:
     fig, axes = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
     cs = axes[0].contour(B0, B1, np.log(Z + 1), levels=20, cmap="viridis")
     axes[0].plot(result.history[:, 0], result.history[:, 1],
-                 "o-", color="#d62728", ms=3, lw=1, label="iterate")
+                 "o-", color=COLORS["likelihood"], ms=3, lw=1, label="iterate")
     axes[0].plot(*analytic, "x", color="green", ms=12, mew=2, label="analytic")
     axes[0].plot(*theta0, "o", color="black", ms=8, label="init")
     axes[0].set_xlabel(r"$\beta_0$")
@@ -92,7 +93,7 @@ def main() -> None:
     axes[0].grid(alpha=0.3)
     fig.colorbar(cs, ax=axes[0], label="log(loss + 1)")
 
-    axes[1].plot(result.losses, color="#1f77b4", lw=2)
+    axes[1].plot(result.losses, color=COLORS["prior"], lw=2)
     axes[1].set_yscale("log")
     axes[1].set_xlabel("iteration")
     axes[1].set_ylabel("loss")

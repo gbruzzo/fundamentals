@@ -271,7 +271,7 @@ class TestEnrichedMetadata:
         data = json.loads(body)
         ch1 = next(c for c in data["chapters"] if c["number"] == 1)
         assert ch1["subtitle"] == "The Hypothesis-Testing Brain"
-        assert ch1["kind_counts"]["concept"] == 4
+        assert ch1["kind_counts"]["concept"] == 5
         assert ch1["figure_count"] >= 0
         assert "repo" in data
         entropy = next(e for e in data["extras"] if e["slug"] == "entropy")

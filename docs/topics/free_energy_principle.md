@@ -138,6 +138,9 @@ agent's instantaneous free-energy contribution.
 
 ## See also
 
+- [`../chapters/chapter_04.md`](../chapters/chapter_04.md) — the chapter
+  this page's ``F`` decomposition drives: coordinate search, fixed-form VI,
+  and free-form CAVI all minimize this exact quantity.
 - [`active_inference.md`](active_inference.md) — the agent loop that
   minimizes ``F``.
 - [`bayesian_mechanics.md`](bayesian_mechanics.md) — the dynamical

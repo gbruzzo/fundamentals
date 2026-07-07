@@ -24,6 +24,7 @@ from active_inference import (
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch3.ex1")
 
@@ -72,7 +73,7 @@ def main() -> None:
 
     grid = np.linspace(0.0, 5.0, 200)
     for theta in estimates[:30]:  # only plot a subset of fits
-        axes[0].plot(grid, theta[0] + theta[1] * grid, color="#2ca02c",
+        axes[0].plot(grid, theta[0] + theta[1] * grid, color=COLORS["posterior"],
                      lw=0.7, alpha=0.5)
     axes[0].plot(grid, 3.0 + 2.0 * grid, color="red", lw=2, label="true line")
     axes[0].set_xlabel("x")

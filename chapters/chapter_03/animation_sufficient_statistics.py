@@ -2,13 +2,13 @@
 
 Run::
 
-    python chapters/chapter_03/animate_sufficient_stats.py [--save]
+    python chapters/chapter_03/animation_sufficient_statistics.py [--save]
 
 This animation shows what is *actually* changing as observations arrive: the
 posterior mean walking toward the truth, the posterior std contracting, and
 the KL from the prior climbing as the data dominates. It complements the
-shape-evolution animation in ``animation_sequential.py`` by surfacing
-numerical statistics rather than just the density curves.
+shape-evolution animation in ``chapters/chapter_02/animation_sequential.py``
+by surfacing numerical statistics rather than just the density curves.
 """
 
 from __future__ import annotations

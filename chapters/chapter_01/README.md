@@ -16,6 +16,8 @@ helpers from `active_inference` rather than re-deriving anything inline.
 | `02_three_perspectives.py`| Side-by-side simulation of the *scientific*, *hypothesis-testing*, and *statistical* views of modeling. |
 | `03_bayes_intuition.py`   | Bayes' theorem step-by-step on a single-state, single-observation toy. |
 | `04_inverse_problem.py`   | When the generating function is non-injective the posterior splits into multiple modes. |
+| `05_belief_from_stream.py`| **Animation** (GIF): the box-scenario sensor stream arriving beside the belief sharpening toward `x*`, with the `σ·√N` concentration statistic. Final mode is cross-checked against the MLE. |
+| `interactive_inverse_problem.py`| **Interactive** (GUI / web-launchable): sliders for the observation `y` and likelihood variance `σ_y²` drive the bi-modal posterior of the non-injective generator; readout reports both modes, their separation, and the posterior entropy. |
 
 ## Running
 

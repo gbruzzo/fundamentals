@@ -30,6 +30,7 @@ from active_inference import (
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch1.perspectives")
 
@@ -56,13 +57,15 @@ def main() -> None:
     fig, axes = plt.subplots(1, 3, figsize=(14, 4.2), constrained_layout=True)
 
     # A — Scientific: unknown function, scientist plots their hypothesized fit.
+    # The scientist sees the observation cloud at x* and the intercept β₀ at x=0,
+    # and fits a line through those two anchors (a two-point slope estimate rather
+    # than a hidden library routine, so the "fit from data" story stays explicit).
     axes[0].scatter(np.full_like(samples, x_true), samples,
-                    s=14, alpha=0.6, color="#d2691e", label="observations")
-    poly = np.poly1d(np.polyfit([x_true] * samples.size + [0.0],
-                                list(samples) + [3.0], 1))
-    axes[0].plot(x_grid, poly(x_grid), color="#888", ls="--",
+                    s=14, alpha=0.6, color=COLORS["sensory"], label="observations")
+    slope_fit = (float(samples.mean()) - 3.0) / x_true
+    axes[0].plot(x_grid, 3.0 + slope_fit * x_grid, color=COLORS["neutral"], ls="--",
                  label="scientist's fit")
-    axes[0].plot(x_grid, f_x, color="#333", lw=2, label="true (unknown) g(x)")
+    axes[0].plot(x_grid, f_x, color=COLORS["data"], lw=2, label="true (unknown) g(x)")
     axes[0].set_title("A · Scientific modeling\n(\"reality is a target system\")")
     axes[0].set_xlabel("x")
     axes[0].set_ylabel("y")
@@ -72,10 +75,10 @@ def main() -> None:
     # B — Hypothesis-testing brain: predictions and prediction errors.
     pred_mean = float(np.mean(samples))
     errors = samples - pred_mean
-    axes[1].axhline(pred_mean, color="#1f77b4", lw=2, label="prediction")
+    axes[1].axhline(pred_mean, color=COLORS["prior"], lw=2, label="prediction")
     axes[1].vlines(np.arange(samples.size), pred_mean, samples,
-                   colors="#d62728", alpha=0.5, label="prediction error")
-    axes[1].scatter(np.arange(samples.size), samples, s=10, color="black")
+                   colors=COLORS["likelihood"], alpha=0.5, label="prediction error")
+    axes[1].scatter(np.arange(samples.size), samples, s=10, color=COLORS["data"])
     axes[1].set_title("B · Hypothesis-testing brain\n(prediction → error → update)")
     axes[1].set_xlabel("time")
     axes[1].set_ylabel("y")
@@ -89,10 +92,10 @@ def main() -> None:
         m_x=2.0, s2_x=2.0, prior_kind="gaussian",
     )
     res = GridBayesianInference(model, x_grid).infer(samples)
-    axes[2].plot(x_grid, res.prior, color="#1f77b4", label="prior")
-    axes[2].plot(x_grid, res.posterior, color="#2ca02c", lw=2, label="posterior")
-    axes[2].axvline(x_true, color="red", ls=":", label=f"x* = {x_true}")
-    axes[2].axvline(res.posterior_mode, color="black", ls="--",
+    axes[2].plot(x_grid, res.prior, color=COLORS["prior"], label="prior")
+    axes[2].plot(x_grid, res.posterior, color=COLORS["posterior"], lw=2, label="posterior")
+    axes[2].axvline(x_true, color=COLORS["truth"], ls=":", label=f"x* = {x_true}")
+    axes[2].axvline(res.posterior_mode, color=COLORS["data"], ls="--",
                     label=f"mode = {res.posterior_mode:.3f}")
     axes[2].set_title("C · Statistical\n(generative model inverts the process)")
     axes[2].set_xlabel("x")

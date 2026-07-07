@@ -18,6 +18,7 @@ from active_inference.core.diagnostics import (
     gaussian_entropy_univariate,
     gaussian_kl_mvn,
     gaussian_kl_univariate,
+    gradient_check_vector,
     grid_entropy,
     grid_kl_divergence,
     log_score_gaussian,
@@ -340,3 +341,30 @@ class TestMiscHelpers:
         # When the input is constant, std is 0; we substitute 1 so output
         # stays well-defined and equals (x − mean) / 1 = 0.
         np.testing.assert_allclose(z, np.zeros_like(z))
+
+
+class TestGradientCheckVector:
+    def test_correct_analytic_gradient_passes(self) -> None:
+        # f(x) = ½ xᵀ A x + bᵀ x  ⇒  ∇f = A x + b (A symmetric).
+        A = np.array([[2.0, 0.3], [0.3, 1.0]])
+        b = np.array([-1.0, 0.5])
+
+        def f(x: np.ndarray) -> float:
+            return float(0.5 * x @ A @ x + b @ x)
+
+        def grad(x: np.ndarray) -> np.ndarray:
+            return A @ x + b
+
+        err = gradient_check_vector(f, grad, np.array([0.7, -1.3]))
+        assert err < 1e-6
+
+    def test_wrong_sign_gradient_is_flagged(self) -> None:
+        # A sign-flipped gradient must produce a large mismatch (the check has teeth).
+        def f(x: np.ndarray) -> float:
+            return float(x @ x)
+
+        def bad_grad(x: np.ndarray) -> np.ndarray:
+            return -2.0 * x  # correct is +2x
+
+        err = gradient_check_vector(f, bad_grad, np.array([1.0, -2.0, 0.5]))
+        assert err > 1.0

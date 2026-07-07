@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from active_inference import LinearGaussianProcess, get_logger
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import plot_generating_function, save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch1.box")
 
@@ -69,8 +70,8 @@ def main() -> None:
 
     # Visualization 2: time series + histogram of the stream
     fig2, axes = plt.subplots(1, 2, figsize=(11, 3.6), constrained_layout=True)
-    axes[0].plot(samples, color="#1f77b4", lw=1)
-    axes[0].axhline(process.mean(args.x_true), color="red", ls="--",
+    axes[0].plot(samples, color=COLORS["sensory"], lw=1)
+    axes[0].axhline(process.mean(args.x_true), color=COLORS["truth"], ls="--",
                     label=f"true mean {process.mean(args.x_true):.2f}")
     axes[0].set_xlabel("time step")
     axes[0].set_ylabel("y")
@@ -78,9 +79,9 @@ def main() -> None:
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
-    axes[1].hist(samples, bins=30, color="#1f77b4", alpha=0.7,
+    axes[1].hist(samples, bins=30, color=COLORS["sensory"], alpha=0.7,
                  edgecolor="white")
-    axes[1].axvline(process.mean(args.x_true), color="red", ls="--",
+    axes[1].axvline(process.mean(args.x_true), color=COLORS["truth"], ls="--",
                     label="true mean")
     axes[1].set_xlabel("y")
     axes[1].set_ylabel("count")

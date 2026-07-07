@@ -29,6 +29,7 @@ from active_inference.visualizations import (
     plot_prior_likelihood_posterior,
     save_or_show,
 )
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch1.inverse")
 
@@ -75,10 +76,10 @@ def main() -> None:
 
     # A small overlay that annotates the two modes.
     fig_overlay, ax = plt.subplots(figsize=(7, 4), constrained_layout=True)
-    ax.plot(x_grid, res.posterior, color="#2ca02c", lw=2)
-    ax.fill_between(x_grid, res.posterior, alpha=0.25, color="#2ca02c")
+    ax.plot(x_grid, res.posterior, color=COLORS["posterior"], lw=2)
+    ax.fill_between(x_grid, res.posterior, alpha=0.25, color=COLORS["posterior"])
     for m, label in [(mode_left, "left mode"), (mode_right, "right mode")]:
-        ax.axvline(m, color="black", ls="--", lw=1)
+        ax.axvline(m, color=COLORS["data"], ls="--", lw=1)
         ax.annotate(f"{label}\n{m:.3f}", xy=(m, np.max(res.posterior) * 0.9),
                     ha="center", fontsize=9,
                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="black"))

@@ -27,6 +27,7 @@ from active_inference.visualizations import (
     confidence_ellipse,
     save_or_show,
 )
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch3.ex4")
 
@@ -68,7 +69,7 @@ def main() -> None:
                    alpha=0.6)
         for n_std, alpha in zip((1, 2), (0.45, 0.18)):
             ax.add_patch(confidence_ellipse(
-                mean, cov, n_std=n_std, fc="#d62728", ec="#d62728",
+                mean, cov, n_std=n_std, fc=COLORS["likelihood"], ec=COLORS["likelihood"],
                 alpha=alpha, lw=1.5,
             ))
         ax.set_title(f"{label}\nΣ = {np.round(cov, 2).tolist()}", fontsize=9)

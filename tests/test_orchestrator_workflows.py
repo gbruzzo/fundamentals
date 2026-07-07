@@ -72,6 +72,9 @@ class TestChapterWorkflowBuilders:
         assert set(em.figures) == {"example_3_7_factor_analysis_em"}
         assert np.isfinite(em.summary["final_log_likelihood"])
         assert em.summary["rmse"] >= 0.0
+        # EM's defining guarantee: the incomplete-data log-likelihood is monotone.
+        assert em.summary["monotone"] is True
+        assert em.summary["min_ll_delta"] >= -1e-6
 
     def test_chapter_6_and_7_workflows_return_exportable_arrays(self) -> None:
         generalized = build_example_6_7_multivariate_generalized_coordinates(

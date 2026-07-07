@@ -30,8 +30,9 @@ If the addition is an *algorithm* over an existing model, it belongs in
   works.
 - Validate inputs at construction time and raise `ValueError` with a clear
   message — don't push validation to `infer()` / `sample()`.
-- Use Cholesky-based solves over explicit `np.linalg.inv` for any
-  multivariate work.
+- Use a linear-system solve (Cholesky when the factor is reused across
+  calls, `np.linalg.solve` otherwise) over explicit `np.linalg.inv` for
+  any multivariate work.
 
 ## Minimum review checklist for a new method
 

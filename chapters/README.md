@@ -13,7 +13,9 @@ chapters/
 │   ├── 01_box_scenario.py
 │   ├── 02_three_perspectives.py
 │   ├── 03_bayes_intuition.py
-│   └── 04_inverse_problem.py
+│   ├── 04_inverse_problem.py
+│   ├── 05_belief_from_stream.py
+│   └── interactive_inverse_problem.py
 ├── chapter_02/                ← Hidden State Estimation
 │   ├── example_2_1_linear_deterministic.py
 │   ├── example_2_2_linear_probabilistic.py
@@ -27,6 +29,7 @@ chapters/
 │   ├── example_2_10_gradient_descent.py
 │   ├── visualize_generative_model.py
 │   ├── interactive_explorer.py
+│   ├── interactive_gradient_descent.py
 │   ├── animation_sequential.py
 │   └── animation_gradient_descent.py
 ├── chapter_03/                ← Combining Learning and Inference
@@ -47,7 +50,9 @@ chapters/
 │   ├── animation_sufficient_statistics.py
 │   ├── visualize_calibration.py
 │   ├── visualize_coverage.py
-│   └── visualize_posterior_predictive.py
+│   ├── visualize_posterior_predictive.py
+│   ├── interactive_bayesian_regression.py
+│   └── interactive_lgs_localization.py
 ├── chapter_04/                ← Variational Bayesian Inference
 │   ├── example_4_1_coordinate_search.py
 │   ├── example_4_2_surprisal.py
@@ -61,11 +66,14 @@ chapters/
 │   └── interactive_vfe_explorer.py
 ├── chapter_05/                ← Predictive Coding
 │   ├── example_5_1_prediction_errors.py
+│   ├── example_5_2_precision.py
 │   ├── example_5_3_multivariate.py
 │   ├── example_5_4_recognition_dynamics.py
+│   ├── example_5_6_parameterized.py
 │   ├── example_5_7_hierarchical.py
 │   ├── animation_recognition_descent.py
-│   └── animation_hierarchical.py
+│   ├── animation_hierarchical.py
+│   └── interactive_predictive_coding.py
 ├── chapter_06/                ← Generalized Filtering for Perception (Part II)
 │   ├── example_6_1_generalized_filter.py
 │   ├── example_6_2_multivariate_filter.py
@@ -160,11 +168,11 @@ runs every script with `--save` and asserts exit code 0. The
 
 | Chapter   | Scripts                                                                  | Status |
 |-----------|--------------------------------------------------------------------------|--------|
-| Chapter 1 | 4 concept orchestrators                                                  | Complete |
-| Chapter 2 | 14 (10 examples + 2 auxiliary + 2 animations)                            | Complete |
-| Chapter 3 | 18 (7 examples + 8 animations + 3 diagnostic visualizations)             | Complete |
+| Chapter 1 | 6 (4 concept orchestrators + 1 animation + 1 interactive)                 | Complete |
+| Chapter 2 | 15 (10 examples + 1 visualization + 2 interactive + 2 animations)         | Complete |
+| Chapter 3 | 20 (7 examples + 8 animations + 3 diagnostic visualizations + 2 interactive) | Complete |
 | Chapter 4 | 10 (5 examples + 1 animation + 3 visualizations + 1 interactive)         | Complete |
-| Chapter 5 | 6 (4 examples + 2 animations)                                            | Complete |
+| Chapter 5 | 9 (6 examples + 2 animations + 1 interactive)                            | Complete |
 | Chapter 6 | 5 (§6.1 univariate + §6.2 multivariate + §6.3–6.6 generalized/correlated coordinates) | Complete through §6.6 |
 | Chapter 7 | 3 (§7.1–7.5 univariate + multivariate active generalized filtering)           | Complete through §7.5 |
 | Chapter 8 | 4 (2 examples + 1 visualization + 1 animation; §8.1 learning/attention · §8.2–§8.6 hierarchy/message passing) | Partial continuous increment complete; nonlinear hierarchy extensions remain |

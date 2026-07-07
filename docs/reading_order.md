@@ -12,16 +12,20 @@ trying to do.
 ## Path A — *I'm following the book chapter by chapter*
 
 1. [`chapters/chapter_01.md`](chapters/chapter_01.md) → run
-   [`chapters/chapter_01/01_box_scenario.py`](../chapters/chapter_01/01_box_scenario.py).
+   [`chapters/chapter_01/01_box_scenario.py`](../chapters/chapter_01/01_box_scenario.py),
+   then the `05_belief_from_stream.py` animation and the
+   `interactive_inverse_problem.py` slider explorer.
 2. [`chapters/chapter_02.md`](chapters/chapter_02.md) → run Examples 2.1–2.10.
-3. [`chapters/chapter_03.md`](chapters/chapter_03.md) → run Examples 3.1–3.7
-   plus the diagnostic visualizers.
+3. [`chapters/chapter_03.md`](chapters/chapter_03.md) → run Examples 3.1–3.7,
+   the diagnostic visualizers, and the `interactive_bayesian_regression.py`
+   and `interactive_lgs_localization.py` slider explorers.
 4. [`chapters/chapter_04.md`](chapters/chapter_04.md) → run the variational
    examples (coordinate search, fixed-form VI, mean-field CAVI) and the
    `animation_vfe_descent.py` GIF.
 5. [`chapters/chapter_05.md`](chapters/chapter_05.md) → run the predictive-coding
-   examples (recognition dynamics, multivariate, hierarchical) and the two
-   animation orchestrators.
+   examples (precision balance, recognition dynamics, multivariate, parameterized,
+   hierarchical), the two animation orchestrators, and the
+   `interactive_predictive_coding.py` slider explorer.
 6. [`chapters/chapter_06.md`](chapters/chapter_06.md) → run generalized filtering
    for perception: online tracking, multivariate filtering, generalized
    coordinates, correlated embedding-order precision, and Example 6.7 vector
@@ -56,7 +60,7 @@ Start at [`topics/`](topics/) and pick:
 | What Bayesian inference is and why it works on a grid here | [`topics/bayesian_inference.md`](topics/bayesian_inference.md) |
 | How the process / model split is realized in code | [`topics/generative_models.md`](topics/generative_models.md) |
 | The MLE / MAP / BLR / EM lineage | [`topics/learning_and_inference.md`](topics/learning_and_inference.md) |
-| Why Cholesky-based solves matter for MVN math | [`topics/multivariate_gaussians.md`](topics/multivariate_gaussians.md) |
+| Why linear-system solves (Cholesky or `np.linalg.solve`) matter for MVN math | [`topics/multivariate_gaussians.md`](topics/multivariate_gaussians.md) |
 | The stability bound on gradient descent | [`topics/gradient_descent.md`](topics/gradient_descent.md) |
 | When inversion goes bi-modal | [`topics/inverse_problem.md`](topics/inverse_problem.md) |
 | The big-picture active-inference / FEP / Bayesian-mechanics triangle | [`topics/active_inference.md`](topics/active_inference.md) → [`topics/free_energy_principle.md`](topics/free_energy_principle.md) → [`topics/bayesian_mechanics.md`](topics/bayesian_mechanics.md) |

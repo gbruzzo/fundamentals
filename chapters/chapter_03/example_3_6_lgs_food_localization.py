@@ -29,6 +29,7 @@ from active_inference.visualizations import (
     confidence_ellipse,
     save_or_show,
 )
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch3.ex6")
 
@@ -71,7 +72,7 @@ def main() -> None:
     # Background: prior ellipse.
     for n_std, alpha in zip((1, 2), (0.18, 0.07)):
         ax.add_patch(confidence_ellipse(
-            lgs.mx, lgs.cov_x, n_std=n_std, fc="#1f77b4", ec="#1f77b4",
+            lgs.mx, lgs.cov_x, n_std=n_std, fc=COLORS["prior"], ec=COLORS["prior"],
             alpha=alpha, lw=1.0,
         ))
 
@@ -79,14 +80,14 @@ def main() -> None:
     for n_std, alpha in zip((1, 2), (0.5, 0.22)):
         ax.add_patch(confidence_ellipse(
             posterior.mean, posterior.cov, n_std=n_std,
-            fc="#2ca02c", ec="#2ca02c", alpha=alpha, lw=1.5,
+            fc=COLORS["posterior"], ec=COLORS["posterior"], alpha=alpha, lw=1.5,
         ))
 
     ax.scatter(Y[:, 0], Y[:, 1], color="white", edgecolor="black", s=24,
                lw=0.6, label="noisy observations")
-    ax.scatter(*posterior.mean, color="#2ca02c", s=70, marker="o",
+    ax.scatter(*posterior.mean, color=COLORS["posterior"], s=70, marker="o",
                label=f"posterior mean ({posterior.mean[0]:.2f}, {posterior.mean[1]:.2f})")
-    ax.scatter(*lgs.mx, color="#1f77b4", marker="s", s=70,
+    ax.scatter(*lgs.mx, color=COLORS["prior"], marker="s", s=70,
                label=f"prior mean ({lgs.mx[0]}, {lgs.mx[1]})")
     ax.scatter(*true_x, marker="x", color="red", s=120, lw=2,
                label=f"true food ({true_x[0]}, {true_x[1]})")

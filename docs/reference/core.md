@@ -9,8 +9,9 @@ posteriors.
 
 Numerically stable density helpers. Univariate functions broadcast over
 NumPy arrays; multivariate functions accept either a single vector or a
-batch of row-vectors and use Cholesky-based solves rather than explicit
-matrix inverses.
+batch of row-vectors and solve a linear system against the covariance
+matrix — Cholesky for `mvn_log_pdf`/`mvn_sample`, `np.linalg.solve` for
+`mahalanobis_squared` — rather than forming an explicit matrix inverse.
 
 | Symbol | Signature | Purpose |
 |---|---|---|
@@ -51,6 +52,7 @@ Statistical diagnostics. The full statistical-tool reference lives in
 | `normal_ci(mean, sigma2, level)` | floats → (lo, hi) | Equal-tailed Gaussian CI via `scipy.special.erfinv`. |
 | `standardize(samples)` | (N, D) → (N, D) | Columnwise z-score with ddof=1. |
 | `gradient_check(f, grad, x0, *, eps=1e-5)` | callables + point → float | Max abs error between an analytic gradient and a central finite difference (used to validate the Ch.5 PC gradient). |
+| `gradient_check_vector(f, grad, x0, *, eps=1e-6)` | scalar field + vector grad + point → float | Vector analogue: per-coordinate central-difference check of `∂F/∂μ` — validates the multivariate/over-determined PC recognition gradient (§5.3 Eq. 21). |
 | `convergence_report(trace, *, tol=1e-9)` | (T,) → `ConvergenceReport` | Monotonicity, total decrease, max increase, and empirical linear-convergence rate of a descent trace. |
 | `ConvergenceReport` | dataclass | `monotone`, `final`, `total_decrease`, `n_steps`, `rate`, `max_increase`. |
 | `oracle_agreement(estimate, oracle, *, tol=1e-2)` | floats → `OracleAgreement` | Compares an estimate to an independent oracle (e.g. PC fixed point vs grid posterior mean). |

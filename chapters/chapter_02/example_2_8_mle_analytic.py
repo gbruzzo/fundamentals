@@ -24,9 +24,11 @@ from active_inference import (
     make_grid,
     mle_analytic_linear,
     mle_loss,
+    oracle_agreement,
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch2.ex8")
 
@@ -57,25 +59,29 @@ def main() -> None:
         prior_kind="uniform", uniform_low=0.0, uniform_high=5.0,
     )
     res = GridBayesianInference(model, x_grid).infer(samples)
-    LOG.info("Analytic MLE = %.4f, grid posterior mode = %.4f, true x* = %.4f",
-             x_mle, res.posterior_mode, args.x_true)
+    # Cross-check: the closed-form MLE must equal the uniform-prior grid mode up to
+    # the grid resolution (Δx ≈ 0.01 here) — the analytic-vs-numerical oracle.
+    agree = oracle_agreement(x_mle, res.posterior_mode, tol=2e-2)
+    LOG.info("Analytic MLE = %.4f, grid posterior mode = %.4f, true x* = %.4f "
+             "| oracle agree=%s (|Δ|=%.2e)",
+             x_mle, res.posterior_mode, args.x_true, agree.passed, agree.abs_error)
 
     nll = mle_loss(x_grid, samples, beta0=3.0, beta1=2.0, sigma2_y=0.25)
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
-    axes[0].plot(x_grid, nll, color="#1f77b4", lw=2, label="−ℓ(x)")
-    axes[0].axvline(x_mle, color="red", ls="--", label=f"x_MLE = {x_mle:.3f}")
-    axes[0].axvline(args.x_true, color="green", ls=":", label=f"x* = {args.x_true}")
+    axes[0].plot(x_grid, nll, color=COLORS["prior"], lw=2, label="−ℓ(x)")
+    axes[0].axvline(x_mle, color=COLORS["likelihood"], ls="--", label=f"x_MLE = {x_mle:.3f}")
+    axes[0].axvline(args.x_true, color=COLORS["truth"], ls=":", label=f"x* = {args.x_true}")
     axes[0].set_xlabel("x")
     axes[0].set_ylabel("negative log-likelihood")
     axes[0].set_title("MLE objective")
     axes[0].legend()
     axes[0].grid(alpha=0.3)
 
-    axes[1].plot(x_grid, res.posterior, color="#2ca02c", lw=2,
+    axes[1].plot(x_grid, res.posterior, color=COLORS["posterior"], lw=2,
                  label="grid posterior (uniform prior)")
-    axes[1].axvline(x_mle, color="red", ls="--", label=f"analytic MLE = {x_mle:.3f}")
-    axes[1].axvline(res.posterior_mode, color="black", ls=":",
+    axes[1].axvline(x_mle, color=COLORS["likelihood"], ls="--", label=f"analytic MLE = {x_mle:.3f}")
+    axes[1].axvline(res.posterior_mode, color=COLORS["data"], ls=":",
                     label=f"grid mode = {res.posterior_mode:.3f}")
     axes[1].set_xlabel("x")
     axes[1].set_ylabel("density")

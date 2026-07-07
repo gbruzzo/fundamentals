@@ -26,9 +26,11 @@ from active_inference import (
     map_analytic_linear,
     mle_analytic_linear,
     map_loss,
+    oracle_agreement,
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch2.ex9")
 
@@ -62,9 +64,13 @@ def main() -> None:
         m_x=4.0, s2_x=0.25, prior_kind="gaussian",
     )
     res = GridBayesianInference(model, x_grid).infer(samples)
+    # The analytic MAP (precision-weighted MLE↔prior blend) must equal the Gaussian-
+    # prior grid mode up to grid resolution — the closed-form-vs-numerical oracle.
+    agree = oracle_agreement(x_map, res.posterior_mode, tol=2e-2)
     LOG.info(
-        "MLE = %.4f, MAP (analytic) = %.4f, grid mode = %.4f, true x* = %.3f",
-        x_mle, x_map, res.posterior_mode, args.x_true,
+        "MLE = %.4f, MAP (analytic) = %.4f, grid mode = %.4f, true x* = %.3f "
+        "| oracle agree=%s (|Δ|=%.2e)",
+        x_mle, x_map, res.posterior_mode, args.x_true, agree.passed, agree.abs_error,
     )
 
     nll_map = map_loss(
@@ -79,21 +85,21 @@ def main() -> None:
     ]
 
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
-    axes[0].plot(x_grid, nll_map, color="#1f77b4", lw=2,
+    axes[0].plot(x_grid, nll_map, color=COLORS["prior"], lw=2,
                  label="−log p(x|y) (up to const.)")
-    axes[0].axvline(x_map, color="red", ls="--", label=f"MAP = {x_map:.3f}")
-    axes[0].axvline(x_mle, color="orange", ls=":", label=f"MLE = {x_mle:.3f}")
-    axes[0].axvline(args.x_true, color="green", ls=":", label=f"x* = {args.x_true}")
+    axes[0].axvline(x_map, color=COLORS["posterior"], ls="--", label=f"MAP = {x_map:.3f}")
+    axes[0].axvline(x_mle, color=COLORS["likelihood"], ls=":", label=f"MLE = {x_mle:.3f}")
+    axes[0].axvline(args.x_true, color=COLORS["truth"], ls=":", label=f"x* = {args.x_true}")
     axes[0].set_xlabel("x")
     axes[0].set_ylabel("MAP loss")
     axes[0].set_title("MAP objective and estimators")
     axes[0].legend(fontsize=8)
     axes[0].grid(alpha=0.3)
 
-    axes[1].semilogx(s2_grid, map_traj, color="#2ca02c", lw=2)
-    axes[1].axhline(x_mle, color="orange", ls=":", label=f"MLE limit = {x_mle:.3f}")
-    axes[1].axhline(4.0, color="red", ls=":", label="prior mean = 4")
-    axes[1].axhline(args.x_true, color="green", ls="--", label=f"x* = {args.x_true}")
+    axes[1].semilogx(s2_grid, map_traj, color=COLORS["posterior"], lw=2)
+    axes[1].axhline(x_mle, color=COLORS["likelihood"], ls=":", label=f"MLE limit = {x_mle:.3f}")
+    axes[1].axhline(4.0, color=COLORS["prior"], ls=":", label="prior mean = 4")
+    axes[1].axhline(args.x_true, color=COLORS["truth"], ls="--", label=f"x* = {args.x_true}")
     axes[1].set_xlabel("prior variance s2_x  (log scale)")
     axes[1].set_ylabel("MAP estimate")
     axes[1].set_title("Prior strength sweep")

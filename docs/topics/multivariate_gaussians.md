@@ -2,8 +2,10 @@
 
 The multivariate normal (MVN) is the workhorse for vector-valued
 hidden-state inference, sensor fusion, and parameter posteriors. Every
-MVN routine in this codebase is implemented with **Cholesky-based
-solves** — never explicit covariance inversion — so the math stays
+MVN routine in this codebase solves a linear system against the
+covariance matrix — Cholesky decomposition for `mvn_log_pdf` and
+`mvn_sample`, `np.linalg.solve` for `mahalanobis_squared` — rather
+than forming an explicit covariance inverse, so the math stays
 numerically stable even when the covariance is ill-conditioned.
 
 ## In this codebase
@@ -13,7 +15,8 @@ numerically stable even when the covariance is ill-conditioned.
 - **Sampling:** `core.distributions.mvn_sample(mu, cov, n=...)` — uses
   the same Cholesky factor as the density routines.
 - **Quadratic form:** `core.distributions.mahalanobis_squared(x, mu, cov)`
-  computes ``(x − μ)ᵀ Σ⁻¹ (x − μ)`` via a Cholesky solve, returning a
+  computes ``(x − μ)ᵀ Σ⁻¹ (x − μ)`` via `np.linalg.solve` against the
+  covariance matrix directly (not a Cholesky factor), returning a
   scalar for a vector input or a length-N array for a batch.
 - **Covariance constructors:** `isotropic_cov(d, var)` (spherical) and
   `diagonal_cov(variances)` (axis-aligned).
@@ -59,6 +62,9 @@ print("Mahalanobis(0):", mahalanobis_squared(np.zeros(2), mu, cov))
 - [`generative_models.md`](generative_models.md) — where MVN slots in.
 - [`bayesian_inference.md`](bayesian_inference.md) — closed-form MVN
   posteriors.
+- [`../chapters/chapter_03.md`](../chapters/chapter_03.md) — Example 3.4
+  (MVN anatomy) and Example 3.6 (the LGS posterior over a 2-D hidden
+  state).
 - [`../statistics/divergences.md`](../statistics/divergences.md) — KL
   between MVNs.
 - [`../reference/core.md`](../reference/core.md) — full API.

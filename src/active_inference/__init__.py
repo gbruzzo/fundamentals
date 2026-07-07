@@ -74,6 +74,7 @@ from .core.diagnostics import (
     gaussian_kl_mvn,
     gaussian_kl_univariate,
     gradient_check,
+    gradient_check_vector,
     grid_entropy,
     grid_kl_divergence,
     log_score_gaussian,
@@ -365,6 +366,7 @@ from .estimators.predictive_coding import (
     hierarchical_predictive_coding,
     multivariate_predictive_coding,
     pc_multivariate_linear_fixed_point,
+    pc_parameterized_lstsq_oracle,
     predictive_coding_inference,
 )
 from .estimators.generalized_filtering import (
@@ -632,6 +634,7 @@ __all__ = [
     "PredictiveCodingResult",
     "multivariate_predictive_coding",
     "pc_multivariate_linear_fixed_point",
+    "pc_parameterized_lstsq_oracle",
     "MultivariatePCResult",
     "hierarchical_predictive_coding",
     "HierarchicalPCModel",
@@ -877,6 +880,7 @@ __all__ = [
     "posterior_predictive_check",
     "standardize",
     "gradient_check",
+    "gradient_check_vector",
     "convergence_report",
     "ConvergenceReport",
     "oracle_agreement",

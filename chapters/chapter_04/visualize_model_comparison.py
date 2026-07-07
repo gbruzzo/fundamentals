@@ -23,6 +23,7 @@ from active_inference import LinearGaussianModel, get_logger
 from active_inference.core.distributions import gaussian_pdf
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch4.model_cmp")
 
@@ -67,9 +68,9 @@ def main() -> None:
     bad_py = evidence_density(bad, y_grid, x_grid)
 
     fig, ax = plt.subplots(figsize=(8.5, 5), constrained_layout=True)
-    ax.plot(y_grid, true_py, color="#1f77b4", lw=2.5, label="true model")
-    ax.plot(y_grid, good_py, color="#2ca02c", lw=2.5, label="good model")
-    ax.plot(y_grid, bad_py, color="#d62728", lw=2.5, label="bad model")
+    ax.plot(y_grid, true_py, color=COLORS["prior"], lw=2.5, label="true model")
+    ax.plot(y_grid, good_py, color=COLORS["posterior"], lw=2.5, label="good model")
+    ax.plot(y_grid, bad_py, color=COLORS["likelihood"], lw=2.5, label="bad model")
     ax.scatter(data, np.full_like(data, 0.005), marker="|", color="black",
                alpha=0.7, label="data")
     ax.set_xlabel("y")

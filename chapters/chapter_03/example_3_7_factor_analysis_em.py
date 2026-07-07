@@ -36,6 +36,8 @@ def main() -> None:
     )
     LOG.info("Converged=%s after %d iterations.", result.summary["converged"], result.summary["n_iterations"])
     LOG.info("Final marginal LL = %.3f", result.summary["final_log_likelihood"])
+    LOG.info("EM monotonicity: min ΔLL = %.2e (non-decreasing=%s)",
+             result.summary["min_ll_delta"], result.summary["monotone"])
     LOG.info("Reconstruction RMSE = %.4f", result.summary["rmse"])
 
     if args.save:

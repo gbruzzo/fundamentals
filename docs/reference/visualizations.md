@@ -31,6 +31,12 @@ Slider-driven exploration with no `ipywidgets` dependency — purely
 |---|---|
 | `interactive_inference(...)` | Live sliders for observation, prior mean, prior variance, likelihood variance. |
 | `interactive_precision(...)` | Single-slider sweep of the prior-vs-data precision ratio. |
+| `interactive_inverse_problem(...)` | Ch.1 — non-injective quadratic generator; `y` and `σ_y²` sliders drive the bi-modal posterior; readout reports both modes and their separation. |
+| `interactive_bayesian_regression(...)` | Ch.3 — Bayesian linear regression; `N` and prior-precision sliders tighten the ±2σ predictive band as evidence accumulates; readout reports recovered `β0`/`β1` ± posterior std. |
+| `interactive_predictive_coding(...)` | Ch.5 — free-energy landscape `F(μ)` with the two precision-weighted prediction errors; `y`/`m_x`/`s_x²`/`σ_y²` sliders slide the minimum `μ*` between data and prior (live Example 5.2). |
+| `interactive_variational_free_energy(...)` | Ch.4 — drag `μ_x`/`σ_x²` of `q(x)=N(μ_x,σ_x²)` against the exact posterior; live bar panel decomposes VFE into divergence + complexity/accuracy, bottoming out exactly at the posterior. |
+| `interactive_gradient_descent(...)` | Ch.2 — trajectory scrubber over the MLE loss surface: a log-learning-rate slider recomputes the descent path from a fixed start (past the stability threshold it diverges instead of converging), an iteration slider scrubs the current path. |
+| `interactive_lgs_localization(...)` | Ch.3 — 2-D LGS food-localization; `y1`/`y2` observation-coordinate sliders slide the posterior mean/std ellipse along the precision-weighted line toward the fixed prior. |
 | `interactive_topic_demo(slug)` | Registry-driven extras slider view backed by `active_inference.extra_topics.build_topic_demo`. |
 
 ```python
@@ -48,6 +54,7 @@ output works with no FFmpeg / ImageMagick install.
 | Symbol | Role |
 |---|---|
 | `animate_sequential_posterior(x_grid, posteriors, *, truth=None, prior=None, ...)` | One frame per assimilated observation. |
+| `animate_stream_belief(x_grid, observations, posteriors, *, truth=None, true_mean=None, prior=None, posterior_stds=None, ...)` | §1.1–1.3 two-panel "box scenario": sensor stream + running mean beside the belief sharpening toward `x*`, with the `σ·√N` concentration statistic. |
 | `animate_gradient_descent(loss_grid, x_grid, history, losses, ...)` | Iterate rolling down the loss curve + sync'd loss trace. |
 | `animate_2d_posterior(means, covs, *, truth=None, prior_mean=None, prior_cov=None, ...)` | 1-/2-σ ellipses tightening over frames. |
 | `animate_em_convergence(log_likelihoods, Theta_history, ...)` | LL curve + heat-map of loadings per iteration. |
@@ -127,6 +134,7 @@ language. See the [Chapter 5 concept map](../chapters/chapter_05.md).
 | `layer_colors(n)` | `n` perceptually-ordered viridis colours for hierarchical layers. |
 | `plot_recognition_dynamics(result, *, truth=None, oracle=None, surprisal=None, ...)` | Unified descent figure — Ch.4 `FixedFormResult` (2 panels) **or** Ch.5 `PredictiveCodingResult` (3 panels); annotates `μ*`, oracle error, `F₀→F*`, convergence rate. |
 | `plot_prediction_errors(model, y, mu_grid, *, truth=None)` | Fig. 5.1.2 — `F(μ)` with grid argmin + **closed-form** minimizer & curvature, and the two weighted errors trading off. |
+| `plot_multivariate_pc(result, *, truth=None, oracle=None, title=...)` | §5.3 / §5.6 — 3-panel `MultivariatePCResult`: per-component belief `μ_c` with truth/oracle lines, `‖ε_x‖`/`‖ε_y‖` decay, and free-energy descent; works for over-determined `D>C` maps. |
 | `plot_hierarchical_pc(result, *, truth=None)` | Fig. 5.4.4 — per-layer `μ`/`ε`/`F` with final-value annotations and `Σ F` stats. |
 | `plot_generalized_filter(result, *, truth=None, dt=1.0, ...)` | Fig. 6.1.3 — generalized filtering: belief tracking the hidden state, prediction errors, free energy. |
 | `plot_correlated_embedding_precision(precisions, gammas, ...)` | Fig. 6.6.2 — heatmaps of correlated embedding-order precision as `γ` changes. |

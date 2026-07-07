@@ -33,15 +33,18 @@ demonstrated by a thin orchestrator in `chapters/chapter_03/`.
 | `animation_precision_sweep.py` | Prior/likelihood precision sweep animation. |
 | `animation_sufficient_statistics.py` | Running sufficient-statistics animation. |
 | `visualize_calibration.py` | Calibration reliability diagram. |
-| `visualize_coverage.py` | Credible-interval coverage sweep. |
+| `visualize_coverage.py` | Empirical coverage of a fixed 95% LGS credible region across a sample-size (N) sweep. |
 | `visualize_posterior_predictive.py` | Posterior-predictive diagnostic figure. |
+| `interactive_bayesian_regression.py` | GUI / web-launchable BLR explorer: `N` and prior-precision sliders tighten the ±2σ predictive band; readout reports recovered `β0`/`β1` ± posterior std. |
+| `interactive_lgs_localization.py` | GUI / web-launchable 2-D LGS explorer: `(y1, y2)` observation sliders slide the posterior mean ellipse toward the fixed prior; readout reports posterior mean/std and distance from prior/observation. |
 
 ## Reusable building blocks
 
 * **`active_inference.core.distributions`** — `mvn_pdf`, `mvn_log_pdf`,
   `mvn_sample`, `mahalanobis_squared`, `isotropic_cov`, `diagonal_cov`. All
-  multivariate helpers use Cholesky-based solves, never explicit matrix
-  inverses.
+  multivariate helpers solve a linear system against the covariance matrix
+  (Cholesky for `mvn_log_pdf`/`mvn_sample`, `np.linalg.solve` for
+  `mahalanobis_squared`) rather than forming an explicit matrix inverse.
 * **`active_inference.core.lgs`** — `LinearGaussianSystem` with
   `posterior(y)` and `posterior_batch(Y)` methods returning a
   `LGSPosterior` (mean, covariance, std, precision).
@@ -55,6 +58,21 @@ demonstrated by a thin orchestrator in `chapters/chapter_03/`.
 * **`active_inference.visualizations.animations`** — drop-in helpers for
   `animate_2d_posterior`, `animate_em_convergence`, etc.
   No FFmpeg dependency: GIFs are written via the bundled pillow writer.
+
+## See also
+
+- [`../topics/learning_and_inference.md`](../topics/learning_and_inference.md) —
+  the MLE / MAP / Bayesian / EM decision this chapter's Examples 3.1–3.7
+  exercise end to end.
+- [`../topics/bayesian_inference.md`](../topics/bayesian_inference.md) — the
+  prior/likelihood/posterior/evidence machinery behind
+  `BayesianLinearRegression` and `LinearGaussianSystem`.
+- [`../topics/multivariate_gaussians.md`](../topics/multivariate_gaussians.md) —
+  the Cholesky-based MVN density/sampling routines exercised in Example 3.4
+  and the LGS posteriors of Example 3.6.
+- [`../topics/gradient_descent.md`](../topics/gradient_descent.md) — the
+  iterative alternative to the closed-form estimator, demonstrated in
+  Example 3.2.
 
 ## Where the book takes this next
 

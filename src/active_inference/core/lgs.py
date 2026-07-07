@@ -16,7 +16,8 @@ This module provides:
 * :meth:`LinearGaussianSystem.posterior_batch` — i.i.d. observations of a
   single hidden state (the "sensor fusion" pattern).
 
-All updates use Cholesky-based solves rather than explicit matrix inverses.
+Posterior updates use explicit matrix inversion (`np.linalg.inv`) on the
+prior and likelihood precision matrices, not Cholesky-based solves.
 """
 
 from __future__ import annotations

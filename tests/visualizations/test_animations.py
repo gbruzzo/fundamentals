@@ -47,6 +47,7 @@ from active_inference.visualizations.animations import (  # noqa: E402
     animate_precision_sweep,
     animate_recognition_dynamics,
     animate_sequential_posterior,
+    animate_stream_belief,
     animate_sufficient_statistics,
     save_animation,
 )
@@ -87,6 +88,35 @@ class TestSequentialPosterior:
         prior = np.exp(-((x - 4) ** 2))
         anim = animate_sequential_posterior(x, posteriors, prior=prior)
         assert_func_animation(anim)
+
+
+class TestStreamBelief:
+    def _fixture(self, n=8):
+        x = np.linspace(0, 5, 80)
+        posteriors = [np.exp(-((x - mu) ** 2)) for mu in np.linspace(3.5, 2.5, n)]
+        obs = np.linspace(6.0, 7.5, n)
+        stds = np.linspace(0.8, 0.3, n)
+        return x, obs, posteriors, stds
+
+    def test_frame_count_and_metadata(self) -> None:
+        x, obs, posteriors, stds = self._fixture(8)
+        anim = animate_stream_belief(
+            x, obs, posteriors, truth=2.5, true_mean=7.0,
+            prior=np.exp(-((x - 4) ** 2)), posterior_stds=stds)
+        assert_func_animation(anim)
+        assert anim._metadata["kind"] == "stream_belief"
+        assert anim._metadata["n_frames"] == 8
+        assert anim._metadata["truth"] == 2.5
+
+    def test_mismatched_observations_raises(self) -> None:
+        x, obs, posteriors, _ = self._fixture(8)
+        with pytest.raises(ValueError):
+            animate_stream_belief(x, obs[:-1], posteriors)
+
+    def test_mismatched_stds_raises(self) -> None:
+        x, obs, posteriors, stds = self._fixture(8)
+        with pytest.raises(ValueError):
+            animate_stream_belief(x, obs, posteriors, posterior_stds=stds[:-1])
 
 
 class TestGradientDescent:

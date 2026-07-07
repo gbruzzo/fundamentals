@@ -12,7 +12,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from active_inference.core.diagnostics import convergence_report, oracle_agreement
+from active_inference.core.diagnostics import (
+    convergence_report,
+    gradient_check_vector,
+    oracle_agreement,
+)
 from active_inference.core.generative_model import LinearGaussianModel
 from active_inference.core.inference import GridBayesianInference
 from active_inference.core.predictive_coding import (
@@ -30,6 +34,7 @@ from active_inference.estimators.predictive_coding import (
     hierarchical_predictive_coding,
     multivariate_predictive_coding,
     pc_multivariate_linear_fixed_point,
+    pc_parameterized_lstsq_oracle,
     predictive_coding_inference,
 )
 
@@ -213,6 +218,135 @@ class TestMultivariateLinearOracle:
             A, b, y, np.zeros(2), precision_y=np.array([1.0, 1.0]),
             precision_x=np.array([1e-9, 1e-9]))
         assert np.allclose(oracle, np.linalg.solve(A, y - b), atol=1e-4)
+
+
+# ---------------------------------------------------------------------------
+# §5.6 — parameterized nonlinear over-determined PC (Example 5.6)
+# ---------------------------------------------------------------------------
+
+# Book §5.6 parameterized model: rectangular 4×2 mixing matrix, g(x)=Θ(x⊙x)+b.
+THETA_56 = np.array([[-0.1, 0.3], [0.3, 0.4], [0.2, -0.5], [-0.1, 0.1]])
+OFFSET_56 = np.ones(4)
+X_TRUE_56 = np.array([0.5, 2.5])
+
+
+def _param_g(x: np.ndarray) -> np.ndarray:
+    return THETA_56 @ (x * x) + OFFSET_56
+
+
+def _param_jac(x: np.ndarray) -> np.ndarray:
+    return THETA_56 @ np.diag(2.0 * x)
+
+
+class TestParameterizedOracle:
+    def test_oracle_inverts_consistent_observation(self) -> None:
+        # Noiseless y = g(x*) ⇒ least-squares squared-state recovery is exact.
+        y = _param_g(X_TRUE_56)
+        est = pc_parameterized_lstsq_oracle(THETA_56, OFFSET_56, y, sign=np.sign(X_TRUE_56))
+        assert np.allclose(est, X_TRUE_56, atol=1e-9)
+
+    def test_sign_is_configurable(self) -> None:
+        # g is even in each component ⇒ oracle honours the caller-supplied sign.
+        y = _param_g(X_TRUE_56)
+        est = pc_parameterized_lstsq_oracle(
+            THETA_56, OFFSET_56, y, sign=np.array([-1.0, 1.0]))
+        assert np.allclose(est, np.array([-0.5, 2.5]), atol=1e-9)
+
+    def test_dimension_mismatch_raises(self) -> None:
+        with pytest.raises(ValueError):
+            pc_parameterized_lstsq_oracle(THETA_56, OFFSET_56, np.ones(3))
+        with pytest.raises(ValueError):
+            pc_parameterized_lstsq_oracle(
+                THETA_56, OFFSET_56, _param_g(X_TRUE_56), sign=np.ones(3))
+
+    def test_flat_prior_recognition_matches_oracle(self) -> None:
+        # The iterative over-determined nonlinear descent lands on the closed form.
+        y = _param_g(X_TRUE_56)
+        oracle = pc_parameterized_lstsq_oracle(
+            THETA_56, OFFSET_56, y, sign=np.sign(X_TRUE_56))
+        r = multivariate_predictive_coding(
+            g=_param_g, jacobian=_param_jac, y=y, m_x=np.ones(2),
+            precision_y=np.full(4, 2.0), precision_x=np.full(2, 1e-6),
+            mu0=np.ones(2), kappa=0.05, n_iter=200000, tol=1e-15,
+        )
+        assert isinstance(r, MultivariatePCResult)
+        assert np.allclose(r.mu_star, oracle, atol=1e-4)
+        assert np.allclose(r.mu_star, X_TRUE_56, atol=1e-4)
+        # Sensory prediction error is driven to zero (data fully explained).
+        assert float(np.linalg.norm(_param_g(r.mu_star) - y)) < 1e-4
+
+    def test_recognition_gradient_matches_finite_differences(self) -> None:
+        # Prove the multivariate/over-determined recognition gradient
+        # ∂F/∂μ = Π_x ε_x − Jᵀ Π_y ε_y (§5.3 Eq. 21) numerically — the same
+        # expression the descent loop applies — at several off-fixed-point beliefs.
+        y = _param_g(X_TRUE_56)
+        Pi_y = np.diag(np.full(4, 2.0))
+        Pi_x = np.diag(np.full(2, 1.5))
+        m_x = np.array([1.0, 1.0])
+
+        def free_energy(mu: np.ndarray) -> float:
+            eps_y = y - _param_g(mu)
+            eps_x = mu - m_x
+            return float(0.5 * eps_y @ Pi_y @ eps_y + 0.5 * eps_x @ Pi_x @ eps_x)
+
+        def analytic_grad(mu: np.ndarray) -> np.ndarray:
+            eps_y = y - _param_g(mu)
+            eps_x = mu - m_x
+            return Pi_x @ eps_x - _param_jac(mu).T @ Pi_y @ eps_y
+
+        for mu in (np.array([0.3, 2.0]), np.array([1.2, 3.1]), np.array([0.8, 1.4])):
+            err = gradient_check_vector(free_energy, analytic_grad, mu, eps=1e-6)
+            assert err < 1e-5
+
+    def test_informative_prior_pulls_toward_prior_mean(self) -> None:
+        # With a real prior the MAP belief sits between x* and m_x (precision balance).
+        y = _param_g(X_TRUE_56)
+        m_x = np.array([1.0, 1.0])
+        r = multivariate_predictive_coding(
+            g=_param_g, jacobian=_param_jac, y=y, m_x=m_x,
+            precision_y=np.full(4, 2.0), precision_x=np.full(2, 2.0),
+            mu0=m_x, kappa=0.05, n_iter=20000, tol=1e-14,
+        )
+        # Belief moved off the prior mean toward the data-consistent state, but the
+        # prior keeps it strictly short of exact recovery.
+        assert np.linalg.norm(r.mu_star - X_TRUE_56) > 1e-2
+        assert np.linalg.norm(r.mu_star - m_x) > 1e-2
+
+
+# ---------------------------------------------------------------------------
+# §5.2 — precision balances the two prediction errors (Example 5.2)
+# ---------------------------------------------------------------------------
+
+
+class TestPrecisionBalance:
+    # Book §5.2: g(x)=2x+3, ŷ=7 (data-consistent x*=2), prior m_x=4.
+    SETTINGS = [(0.5, 2.0), (0.1, 1.0), (1.0, 0.1)]
+
+    def _model(self, s2_x, sigma2_y):
+        return PredictiveCodingModel(g=LinearFunction(2.0, 3.0), sigma2_y=sigma2_y,
+                                     m_x=4.0, s2_x=s2_x)
+
+    def test_grid_minimum_matches_closed_form(self) -> None:
+        mu = np.linspace(0.0, 6.0, 2001)
+        for s2_x, sigma2_y in self.SETTINGS:
+            model = self._model(s2_x, sigma2_y)
+            fe = np.array([predictive_coding_free_energy(model, 7.0, float(m)).free_energy
+                           for m in mu])
+            grid_min = float(mu[int(np.argmin(fe))])
+            oracle = pc_linear_fixed_point(model, 7.0)
+            assert oracle_agreement(grid_min, oracle, tol=5e-3).passed
+
+    def test_minimum_lies_between_data_and_prior(self) -> None:
+        # The MAP belief is a precision-weighted compromise: 2 (data) ≤ μ* ≤ 4 (prior).
+        for s2_x, sigma2_y in self.SETTINGS:
+            mu_star = pc_linear_fixed_point(self._model(s2_x, sigma2_y), 7.0)
+            assert 2.0 - 1e-9 <= mu_star <= 4.0 + 1e-9
+
+    def test_higher_precision_ratio_pulls_toward_prior(self) -> None:
+        # μ* increases monotonically with λ_x/λ_y = σ_y²/s_x² (toward m_x=4).
+        ordered = sorted(self.SETTINGS, key=lambda s: s[1] / s[0])  # by ratio
+        minima = [pc_linear_fixed_point(self._model(s2, sy), 7.0) for s2, sy in ordered]
+        assert all(a <= b + 1e-9 for a, b in zip(minima, minima[1:]))
 
 
 # ---------------------------------------------------------------------------

@@ -335,15 +335,15 @@ def build_example_3_7_factor_analysis_em(
     rmse = float(np.sqrt(((y - y_hat) ** 2).mean()))
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8), constrained_layout=True)
-    axes[0, 0].plot(result.log_likelihoods, color="#1f77b4", lw=2)
+    axes[0, 0].plot(result.log_likelihoods, color=COLORS["prior"], lw=2)
     axes[0, 0].set_xlabel("EM iteration")
     axes[0, 0].set_ylabel("incomplete log p(Y)")
     axes[0, 0].set_title("Marginal log-likelihood (monotone increase)")
     axes[0, 0].grid(alpha=0.3)
     width = 0.35
     idx = np.arange(true_diag.size)
-    axes[0, 1].bar(idx - width / 2, true_diag, width=width, color="#1f77b4", label="true")
-    axes[0, 1].bar(idx + width / 2, np.diag(result.cov_y), width=width, color="#2ca02c", label="EM estimate")
+    axes[0, 1].bar(idx - width / 2, true_diag, width=width, color=COLORS["truth"], label="true")
+    axes[0, 1].bar(idx + width / 2, np.diag(result.cov_y), width=width, color=COLORS["posterior"], label="EM estimate")
     axes[0, 1].set_xticks(idx)
     axes[0, 1].set_xticklabels([f"y_{i}" for i in idx])
     axes[0, 1].set_ylabel("noise variance")
@@ -362,12 +362,19 @@ def build_example_3_7_factor_analysis_em(
     axes[1, 1].set_xlabel("factor")
     axes[1, 1].set_ylabel("output dim")
 
+    # EM's defining guarantee: the incomplete-data log-likelihood never decreases.
+    # The smallest step-to-step increment quantifies (and, at ≥ ~0, certifies) it.
+    ll_deltas = np.diff(result.log_likelihoods)
+    min_ll_delta = float(ll_deltas.min()) if ll_deltas.size else float("nan")
+
     return WorkflowResult(
         figures={"example_3_7_factor_analysis_em": fig},
         summary={
             "converged": bool(result.converged),
             "n_iterations": int(result.n_iterations),
             "final_log_likelihood": float(result.log_likelihoods[-1]),
+            "min_ll_delta": min_ll_delta,
+            "monotone": bool(min_ll_delta >= -1e-6),
             "rmse": rmse,
         },
     )

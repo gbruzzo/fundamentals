@@ -28,6 +28,7 @@ from active_inference import (
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch4.vfe_intuition")
 
@@ -52,7 +53,7 @@ def main() -> None:
     joint = np.exp(model.log_likelihood(args.y, x_grid) + model.log_prior(x_grid))
 
     fig, ax = plt.subplots(figsize=(8, 5), constrained_layout=True)
-    ax.fill_between(x_grid, exact.posterior, color="#aec7e8", alpha=0.8,
+    ax.fill_between(x_grid, exact.posterior, color=COLORS["prior"], alpha=0.8,
                     label="p(x | y)")
     ax.plot(x_grid, joint, color="black", ls="--", lw=2.5, label="p(x, y)")
 
@@ -62,7 +63,7 @@ def main() -> None:
         mu = mean + rng.normal(0, 0.12)
         v = var * (1.0 + rng.normal(0, 0.18))
         q = GaussianBelief(mu, max(v, 1e-3))
-        ax.plot(x_grid, q.pdf(x_grid), color="#d62728", lw=0.9, alpha=0.7,
+        ax.plot(x_grid, q.pdf(x_grid), color=COLORS["likelihood"], lw=0.9, alpha=0.7,
                 label="q(x)" if k == 0 else None)
 
     ax.set_xlabel("hidden state x")

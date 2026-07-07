@@ -73,15 +73,15 @@ def animate_sequential_posterior(
     ax.set_title(title)
 
     if prior is not None:
-        ax.plot(x_grid, prior, color="#1f77b4", ls="--", lw=1.2,
+        ax.plot(x_grid, prior, color=COLORS["prior"], ls="--", lw=1.2,
                 alpha=0.5, label="prior")
     if truth is not None:
         ax.axvline(truth, color="red", ls=":", lw=1.5,
                    label=f"x* = {truth:.3f}")
 
-    line, = ax.plot([], [], color="#2ca02c", lw=2, label="posterior")
+    line, = ax.plot([], [], color=COLORS["posterior"], lw=2, label="posterior")
     fill = ax.fill_between(x_grid, np.zeros_like(x_grid), alpha=0.25,
-                           color="#2ca02c")
+                           color=COLORS["posterior"])
     txt = ax.text(0.02, 0.93, "", transform=ax.transAxes, fontsize=10,
                   bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="black"))
     ax.legend(loc="upper right", fontsize=9)
@@ -100,7 +100,7 @@ def animate_sequential_posterior(
         # Re-draw fill (matplotlib does not animate `PolyCollection` updates).
         for coll in [c for c in ax.collections if c is fill]:
             coll.remove()
-        fill = ax.fill_between(x_grid, post, alpha=0.25, color="#2ca02c")
+        fill = ax.fill_between(x_grid, post, alpha=0.25, color=COLORS["posterior"])
         mode = float(x_grid[int(np.argmax(post))])
         txt.set_text(f"N = {frame + 1}\nposterior mode = {mode:.3f}")
         return line, txt
@@ -109,6 +109,130 @@ def animate_sequential_posterior(
                          init_func=init, interval=interval_ms, blit=False,
                          repeat_delay=800)
     anim._fig = fig
+    return anim
+
+
+def animate_stream_belief(
+    x_grid: np.ndarray,
+    observations: Sequence[float],
+    posteriors: Sequence[np.ndarray],
+    *,
+    truth: Optional[float] = None,
+    true_mean: Optional[float] = None,
+    prior: Optional[np.ndarray] = None,
+    posterior_stds: Optional[Sequence[float]] = None,
+    title: str = "Reconstructing the world from a sensor stream",
+    interval_ms: int = 90,
+) -> FuncAnimation:
+    r"""Two-panel "box scenario" animation (Chapter 1, §1.1–1.3).
+
+    Tells the Chapter-1 story end to end: an agent sees only a stream of noisy
+    observations and must reconstruct the hidden environmental state from it.
+
+    * **Left panel — the sensor stream.** Observations ``y_n`` appear one at a time
+      as the agent receives them, with the running sample mean ``ȳ_n`` and (if
+      supplied) the true noise-free mean ``g(x*)`` drawn for reference.
+    * **Right panel — the belief.** The posterior ``p(x | y_{1:n})`` sharpens toward
+      the true hidden state ``x*`` as evidence accumulates, with the prior drawn
+      dashed and a stat box reporting ``N``, the posterior mode, its standard
+      deviation ``σ_n``, and — when ``posterior_stds`` is supplied — the empirical
+      ``σ_n·√N`` product, which is approximately constant (the ``1/√N`` concentration
+      law of Bayesian updating under i.i.d. observations).
+
+    ``observations`` and ``posteriors`` must have equal length ``N`` (one posterior
+    per assimilated observation). Returns a :class:`~matplotlib.animation.FuncAnimation`
+    carrying a ``_metadata`` dict so :func:`save_animation` records provenance.
+    """
+    observations = np.asarray(observations, dtype=float)
+    n = len(posteriors)
+    if observations.shape[0] != n:
+        raise ValueError(
+            f"observations ({observations.shape[0]}) and posteriors ({n}) must match")
+    if posterior_stds is not None and len(posterior_stds) != n:
+        raise ValueError("posterior_stds must have one entry per posterior")
+
+    fig, (ax_s, ax_b) = plt.subplots(1, 2, figsize=(12, 4.4), constrained_layout=True)
+
+    # --- Left: the sensor stream -------------------------------------------------
+    idx = np.arange(n)
+    ax_s.set_xlim(-0.5, n - 0.5)
+    y_lo, y_hi = float(observations.min()), float(observations.max())
+    pad = 0.1 * (y_hi - y_lo + 1e-9)
+    ax_s.set_ylim(y_lo - pad, y_hi + pad)
+    ax_s.set_xlabel("observation index n")
+    ax_s.set_ylabel("observation y  (light intensity, a.u.)")
+    ax_s.grid(alpha=0.3)
+    ax_s.set_title("sensor stream")
+    if true_mean is not None:
+        ax_s.axhline(true_mean, color=COLORS["truth"], ls=":", lw=1.6,
+                     label=rf"true mean $g(x^*)$ = {true_mean:.2f}")
+    stream_scatter = ax_s.scatter([], [], s=16, color=COLORS["sensory"],
+                                  alpha=0.7, label="observations")
+    (mean_line,) = ax_s.plot([], [], color=COLORS["data"], lw=1.8,
+                             label=r"running mean $\bar y_n$")
+    ax_s.legend(loc="upper right", fontsize=8)
+
+    # --- Right: the belief -------------------------------------------------------
+    ax_b.set_xlim(x_grid.min(), x_grid.max())
+    peak = max(np.max(p) for p in posteriors)
+    ax_b.set_ylim(0, peak * 1.12)
+    ax_b.set_xlabel("hidden state x  (food size, a.u.)")
+    ax_b.set_ylabel("belief density")
+    ax_b.grid(alpha=0.3)
+    ax_b.set_title("belief over the hidden state")
+    if prior is not None:
+        ax_b.plot(x_grid, prior, color=COLORS["prior"], ls="--", lw=1.3,
+                  alpha=0.6, label="prior")
+    if truth is not None:
+        ax_b.axvline(truth, color=COLORS["truth"], ls=":", lw=1.6,
+                     label=rf"$x^*$ = {truth:.3f}")
+    (belief_line,) = ax_b.plot([], [], color=COLORS["posterior"], lw=2.4,
+                               label="posterior")
+    belief_fill = ax_b.fill_between(x_grid, np.zeros_like(x_grid), alpha=0.25,
+                                    color=COLORS["posterior"])
+    ax_b.legend(loc="upper right", fontsize=8)
+    stat = annotate_stat_box(ax_b, "", loc="upper left")
+
+    running_mean = np.cumsum(observations) / (idx + 1.0)
+
+    def init():
+        """Initialize animation artists before the first rendered frame."""
+        stream_scatter.set_offsets(np.empty((0, 2)))
+        mean_line.set_data([], [])
+        belief_line.set_data([], [])
+        stat.set_text("")
+        return stream_scatter, mean_line, belief_line, stat
+
+    def update(frame: int):
+        """Update stream, running mean, and belief artists for frame ``frame``."""
+        nonlocal belief_fill
+        k = frame + 1
+        stream_scatter.set_offsets(np.column_stack([idx[:k], observations[:k]]))
+        mean_line.set_data(idx[:k], running_mean[:k])
+
+        post = posteriors[frame]
+        belief_line.set_data(x_grid, post)
+        for coll in [c for c in ax_b.collections if c is belief_fill]:
+            coll.remove()
+        belief_fill = ax_b.fill_between(x_grid, post, alpha=0.25,
+                                        color=COLORS["posterior"])
+        mode = float(x_grid[int(np.argmax(post))])
+        lines = [f"N = {k}", f"mode = {mode:.3f}"]
+        if posterior_stds is not None:
+            sd = float(posterior_stds[frame])
+            lines.append(f"σ = {sd:.3f}")
+            lines.append(f"σ·√N = {sd * np.sqrt(k):.3f}")
+        stat.set_text("\n".join(lines))
+        return stream_scatter, mean_line, belief_line, stat
+
+    anim = FuncAnimation(fig, update, frames=n, init_func=init,
+                         interval=interval_ms, blit=False, repeat_delay=900)
+    anim._fig = fig
+    anim._metadata = {
+        "kind": "stream_belief",
+        "n_frames": int(n),
+        "truth": None if truth is None else float(truth),
+    }
     return anim
 
 
@@ -133,8 +257,8 @@ def animate_gradient_descent(
         axes[0].axvline(truth, color="red", ls=":", lw=1, label="x*")
         axes[0].legend()
     axes[0].grid(alpha=0.3)
-    point, = axes[0].plot([], [], "o", color="#d62728", ms=8)
-    trail, = axes[0].plot([], [], color="#d62728", lw=1, alpha=0.4)
+    point, = axes[0].plot([], [], "o", color=COLORS["likelihood"], ms=8)
+    trail, = axes[0].plot([], [], color=COLORS["likelihood"], lw=1, alpha=0.4)
 
     axes[1].set_xlim(0, len(history))
     axes[1].set_ylim(min(losses) * 0.95, max(losses) * 1.05)
@@ -142,7 +266,7 @@ def animate_gradient_descent(
     axes[1].set_ylabel("loss")
     axes[1].set_title("Loss vs iteration")
     axes[1].grid(alpha=0.3)
-    loss_line, = axes[1].plot([], [], color="#1f77b4", lw=2)
+    loss_line, = axes[1].plot([], [], color=COLORS["prior"], lw=2)
 
     def init():
         """Initialize animation artists before the first rendered frame."""
@@ -225,13 +349,13 @@ def animate_2d_posterior(
         for n_std, alpha in zip((1, 2), (0.18, 0.08)):
             ax.add_patch(_ellipse_from_cov(
                 np.asarray(prior_mean), np.asarray(prior_cov),
-                n_std=n_std, fc="#1f77b4", ec="#1f77b4", alpha=alpha,
+                n_std=n_std, fc=COLORS["prior"], ec=COLORS["prior"], alpha=alpha,
                 lw=1.2,
             ))
     if truth is not None:
         ax.scatter(*truth, marker="x", color="red", s=80, lw=2, label="true θ")
 
-    mean_dot, = ax.plot([], [], "o", color="#2ca02c", ms=6, label="posterior mean")
+    mean_dot, = ax.plot([], [], "o", color=COLORS["posterior"], ms=6, label="posterior mean")
     txt = ax.text(0.02, 0.96, "", transform=ax.transAxes, fontsize=10,
                   bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="black"),
                   va="top")
@@ -252,7 +376,7 @@ def animate_2d_posterior(
         m, c = means[frame], covs[frame]
         for n_std, alpha in zip((1, 2), (0.4, 0.18)):
             e = _ellipse_from_cov(
-                m, c, n_std=n_std, fc="#2ca02c", ec="#2ca02c",
+                m, c, n_std=n_std, fc=COLORS["posterior"], ec=COLORS["posterior"],
                 alpha=alpha, lw=1.5,
             )
             ax.add_patch(e)
@@ -306,9 +430,9 @@ def animate_sufficient_statistics(
         axes[0].axhline(truth, color="red", ls=":", lw=1.5, label="truth")
         axes[0].legend(loc="upper right", fontsize=8)
 
-    line_mean, = axes[0].plot([], [], color="#2ca02c", lw=2)
-    line_std,  = axes[1].plot([], [], color="#1f77b4", lw=2)
-    line_kl,   = axes[2].plot([], [], color="#d62728", lw=2)
+    line_mean, = axes[0].plot([], [], color=COLORS["posterior"], lw=2)
+    line_std,  = axes[1].plot([], [], color=COLORS["prior"], lw=2)
+    line_kl,   = axes[2].plot([], [], color=COLORS["likelihood"], lw=2)
     pad = 0.05
     axes[0].set_xlim(n_axis.min(), n_axis.max())
     axes[0].set_ylim(running_mean.min() - pad, running_mean.max() + pad)
@@ -376,7 +500,7 @@ def animate_calibration_growth(
 
     fig, ax = plt.subplots(figsize=(5.5, 5), constrained_layout=True)
     ax.plot([0, 1], [0, 1], color="red", ls="--", lw=1, label="perfect")
-    line, = ax.plot([], [], "o-", color="#1f77b4", lw=2, ms=5,
+    line, = ax.plot([], [], "o-", color=COLORS["prior"], lw=2, ms=5,
                     label="empirical")
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
@@ -436,9 +560,9 @@ def animate_precision_sweep(
         )
 
     fig, ax = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
-    line_p, = ax.plot([], [], color="#1f77b4", lw=2, label="prior")
-    line_l, = ax.plot([], [], color="#d62728", lw=2, label="likelihood")
-    line_q, = ax.plot([], [], color="#2ca02c", lw=2, label="posterior")
+    line_p, = ax.plot([], [], color=COLORS["prior"], lw=2, label="prior")
+    line_l, = ax.plot([], [], color=COLORS["likelihood"], lw=2, label="likelihood")
+    line_q, = ax.plot([], [], color=COLORS["posterior"], lw=2, label="posterior")
     if truth is not None:
         ax.axvline(truth, color="black", ls=":", lw=1, label=f"x* = {truth:.3f}")
     ax.set_xlim(x_grid.min(), x_grid.max())
@@ -509,14 +633,14 @@ def animate_bimodal_emergence(
         raise ValueError("truths must share length with posteriors")
 
     fig, ax = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
-    line, = ax.plot([], [], color="#2ca02c", lw=2)
+    line, = ax.plot([], [], color=COLORS["posterior"], lw=2)
     ax.set_xlim(x_grid.min(), x_grid.max())
     peak = max(np.max(p) for p in posteriors) * 1.1
     ax.set_ylim(0, peak)
     ax.set_xlabel("hidden state x")
     ax.set_ylabel("posterior density")
     ax.grid(alpha=0.3)
-    prior_marker = ax.axvline(0.0, color="#1f77b4", ls="--", lw=1.5,
+    prior_marker = ax.axvline(0.0, color=COLORS["prior"], ls="--", lw=1.5,
                               label="prior mean")
     truth_marker = None
     if truths is not None:
@@ -540,7 +664,7 @@ def animate_bimodal_emergence(
             fill_state["poly"].remove()
         line.set_data(x_grid, posteriors[frame])
         fill_state["poly"] = ax.fill_between(
-            x_grid, posteriors[frame], alpha=0.25, color="#2ca02c"
+            x_grid, posteriors[frame], alpha=0.25, color=COLORS["posterior"]
         )
         prior_marker.set_xdata([prior_means[frame], prior_means[frame]])
         if truth_marker is not None:
@@ -617,7 +741,7 @@ def animate_lgs_online(
 
     obs_scatter = ax.scatter([], [], s=18, color="black",
                              alpha=0.5, label="observations", zorder=3)
-    mean_dot, = ax.plot([], [], "o", color="#2ca02c", ms=8,
+    mean_dot, = ax.plot([], [], "o", color=COLORS["posterior"], ms=8,
                        label="posterior mean")
     txt = ax.text(0.02, 0.96, "", transform=ax.transAxes, fontsize=10,
                   va="top", bbox=dict(boxstyle="round,pad=0.2",
@@ -640,7 +764,7 @@ def animate_lgs_online(
         m, c = means[frame], covs[frame]
         for n_std, alpha in zip((1, 2), (0.45, 0.18)):
             e = _ellipse_from_cov(
-                m, c, n_std=n_std, fc="#2ca02c", ec="#2ca02c",
+                m, c, n_std=n_std, fc=COLORS["posterior"], ec=COLORS["posterior"],
                 alpha=alpha, lw=1.5,
             )
             ax.add_patch(e)
@@ -696,9 +820,9 @@ def animate_em_steps(
     # E-step panel
     e_means_all = np.asarray(e_step_means[0])
     if e_means_all.shape[1] >= 2:
-        e_scatter = ax_e.scatter([], [], s=12, c="#1f77b4", alpha=0.6)
+        e_scatter = ax_e.scatter([], [], s=12, c=COLORS["prior"], alpha=0.6)
     else:
-        e_scatter = ax_e.scatter([], [], s=12, c="#1f77b4", alpha=0.6)
+        e_scatter = ax_e.scatter([], [], s=12, c=COLORS["prior"], alpha=0.6)
     pad = 1.2
     arr_first = np.asarray(e_step_means[0])
     if arr_first.shape[1] >= 2:
@@ -726,7 +850,7 @@ def animate_em_steps(
     ax_ll.set_xlabel("EM iteration")
     ax_ll.set_ylabel("incomplete log p(Y)")
     ax_ll.grid(alpha=0.3)
-    ll_line, = ax_ll.plot([], [], color="#2ca02c", lw=2)
+    ll_line, = ax_ll.plot([], [], color=COLORS["posterior"], lw=2)
     txt = ax_ll.text(0.02, 0.85, "", transform=ax_ll.transAxes, fontsize=10,
                      va="top", bbox=dict(boxstyle="round,pad=0.2",
                                           fc="white", ec="black"))
@@ -799,8 +923,8 @@ def animate_blr_predictive_band(
         ax.plot(x_grid, b0 + b1 * x_grid, color="red", ls=":", lw=1.5,
                 label="true line")
     band = ax.fill_between(x_grid, np.zeros_like(x_grid), np.zeros_like(x_grid),
-                           alpha=0.25, color="#2ca02c")
-    line, = ax.plot([], [], color="#2ca02c", lw=2, label="predictive mean")
+                           alpha=0.25, color=COLORS["posterior"])
+    line, = ax.plot([], [], color=COLORS["posterior"], lw=2, label="predictive mean")
     scatter = ax.scatter([], [], s=14, color="black", alpha=0.6,
                          label="data so far")
     ax.set_xlim(x_grid.min(), x_grid.max())
@@ -831,7 +955,7 @@ def animate_blr_predictive_band(
         band.remove()
         band = ax.fill_between(x_grid, mean_pred - 1.96 * std_pred,
                                mean_pred + 1.96 * std_pred,
-                               alpha=0.25, color="#2ca02c")
+                               alpha=0.25, color=COLORS["posterior"])
         line.set_data(x_grid, mean_pred)
         scatter.set_offsets(np.column_stack([x_data[: frame + 1],
                                              y_data[: frame + 1]]))
@@ -868,7 +992,7 @@ def animate_em_convergence(
     axes[0].set_ylabel("incomplete log p(Y)")
     axes[0].set_title("Marginal log-likelihood")
     axes[0].grid(alpha=0.3)
-    line, = axes[0].plot([], [], color="#1f77b4", lw=2)
+    line, = axes[0].plot([], [], color=COLORS["prior"], lw=2)
 
     vmax = max(np.max(np.abs(t)) for t in Theta_history)
     im = axes[1].imshow(Theta_history[0], cmap="RdBu_r",

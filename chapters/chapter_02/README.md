@@ -29,9 +29,10 @@ uv run python chapters/chapter_02/example_2_2_linear_probabilistic.py --save
 | `example_2_9_map_analytic.py`         | Example 2.9 | Closed-form MAP compared to grid-Bayesian mode. |
 | `example_2_10_gradient_descent.py`    | §2.5.2     | Iterative MLE / MAP via gradient descent. |
 | `visualize_generative_model.py`       | §2.4       | Heatmap and 3D view of `p(x, y)`. |
-| `interactive_explorer.py`             | bonus      | Slider-driven exploration of the canonical model. |
-| `animation_sequential.py`             | bonus      | Animated posterior tightening as N grows (GIF). |
-| `animation_gradient_descent.py`       | bonus      | Animated iterate rolling down the NLL (GIF). |
+| `interactive_explorer.py` (interactive, GUI) | bonus | Slider-driven exploration of the canonical model. `--mode full` (default) opens the four-slider prior/likelihood/posterior explorer; `--mode precision` opens the single `log10(s2_x / sigma2_y)` precision-ratio slider. |
+| `interactive_gradient_descent.py` (interactive, GUI) | §2.5.2 | **Interactive** (GUI / web-launchable): `log10(learning rate)` recomputes the trajectory from a fixed start point; `iteration` scrubs through it. Readout reports the iterate, loss, step size, and converging/diverging status. |
+| `animation_sequential.py` (animation) | bonus      | Animated posterior tightening as N grows (GIF). |
+| `animation_gradient_descent.py` (animation) | bonus      | Animated iterate rolling down the NLL (GIF). |
 
 ## Programmatic usage
 

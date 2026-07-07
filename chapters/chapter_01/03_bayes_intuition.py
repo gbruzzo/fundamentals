@@ -32,6 +32,7 @@ from active_inference.visualizations import (
     plot_prior_likelihood_posterior,
     save_or_show,
 )
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch1.bayes")
 
@@ -70,10 +71,10 @@ def main() -> None:
     norm_lik = res.likelihood / np.max(res.likelihood)
     norm_prior = res.prior / np.max(res.prior)
     norm_post = res.posterior / np.max(res.posterior)
-    ax.plot(x_grid, norm_prior, lw=2, label="prior", color="#1f77b4")
-    ax.plot(x_grid, norm_lik, lw=2, label="likelihood", color="#d62728")
-    ax.plot(x_grid, norm_post, lw=2, label="posterior", color="#2ca02c")
-    ax.axvline(res.posterior_mode, color="black", ls="--",
+    ax.plot(x_grid, norm_prior, lw=2, label="prior", color=COLORS["prior"])
+    ax.plot(x_grid, norm_lik, lw=2, label="likelihood", color=COLORS["likelihood"])
+    ax.plot(x_grid, norm_post, lw=2, label="posterior", color=COLORS["posterior"])
+    ax.axvline(res.posterior_mode, color=COLORS["data"], ls="--",
                label=f"posterior mode = {res.posterior_mode:.2f}")
     ax.set_xlabel("hidden state x")
     ax.set_ylabel("density (peak = 1)")
@@ -83,7 +84,7 @@ def main() -> None:
 
     # Panel C: highlight that the likelihood-as-a-function-of-x is unnormalized.
     fig_c, axes = plt.subplots(1, 2, figsize=(11, 3.6), constrained_layout=True)
-    axes[0].plot(x_grid, res.likelihood, color="#d62728", lw=2)
+    axes[0].plot(x_grid, res.likelihood, color=COLORS["likelihood"], lw=2)
     axes[0].set_title("Likelihood (function of x; not normalized)")
     axes[0].set_xlabel("x")
     axes[0].set_ylabel("credibility")
@@ -92,10 +93,10 @@ def main() -> None:
     unnormalized = np.exp(model.log_likelihood(args.y_obs, x_grid)
                           + model.log_prior(x_grid))
     evidence = np.trapezoid(unnormalized, x_grid)
-    axes[1].plot(x_grid, unnormalized / evidence, color="#2ca02c", lw=2,
+    axes[1].plot(x_grid, unnormalized / evidence, color=COLORS["posterior"], lw=2,
                  label="posterior")
     axes[1].fill_between(x_grid, unnormalized / evidence, alpha=0.25,
-                         color="#2ca02c")
+                         color=COLORS["posterior"])
     axes[1].set_title(f"Posterior (evidence p(y) = {evidence:.4g})")
     axes[1].set_xlabel("x")
     axes[1].set_ylabel("density")

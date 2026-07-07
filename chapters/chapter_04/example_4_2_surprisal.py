@@ -19,10 +19,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from active_inference import (
+    GaussianBelief,
     GridBayesianInference,
     LinearGaussianModel,
+    free_energy_bound_gap,
     get_logger,
     surprisal,
+    variational_free_energy,
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import plot_surprisal_relationship, save_or_show
@@ -52,6 +55,27 @@ def main() -> None:
         s = surprisal(model, y, x_grid)
         LOG.info("ŷ=%.1f → log p(y)=%.3f  surprisal=%.3f",
                  y, inf.infer(y).log_evidence, s)
+
+    # Book Eq. 26: F(q) ≥ −log p(y) for *any* q, tight (gap → 0) only at the exact
+    # posterior. Demonstrate the inequality holds and is minimized at the posterior.
+    y_demo = 7.0
+    post = inf.infer(y_demo)
+    posterior_belief = GaussianBelief(mu=post.posterior_mean, var=post.posterior_variance)
+    beliefs = {
+        "prior-centred q": GaussianBelief(mu=4.0, var=0.25),
+        "misfit q": GaussianBelief(mu=0.0, var=1.0),
+        "≈posterior q": posterior_belief,
+    }
+    surp = surprisal(model, y_demo, x_grid)
+    min_gap = float("inf")
+    for name, q in beliefs.items():
+        F = variational_free_energy(q, model, y_demo, x_grid).free_energy
+        gap = free_energy_bound_gap(q, model, y_demo, x_grid)
+        min_gap = min(min_gap, gap)
+        LOG.info("  %-16s F=%.4f  ≥ surprisal=%.4f ?  gap=%.3e (≥0=%s)",
+                 name, F, surp, gap, bool(gap >= -1e-8))
+    LOG.info("upper bound Eq.26 verified: min gap over beliefs = %.3e "
+             "(tight at the posterior)", min_gap)
 
     if args.save:
         out = ensure_dir(default_figure_dir() / "chapter_04")

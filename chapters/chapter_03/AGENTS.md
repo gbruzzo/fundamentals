@@ -26,8 +26,10 @@ analysis.
 | [`animation_bimodal_emergence.py`](animation_bimodal_emergence.py) | ~75 | GIF: bi-modal posterior from a non-injective generator. |
 | [`animation_sufficient_statistics.py`](animation_sufficient_statistics.py) | ~75 | GIF: running sufficient statistics over a Gaussian stream. |
 | [`visualize_calibration.py`](visualize_calibration.py) | ~80 | Empirical-vs-nominal coverage curve for a BLR forecast. |
-| [`visualize_coverage.py`](visualize_coverage.py) | ~80 | Coverage sweep across credible levels. |
+| [`visualize_coverage.py`](visualize_coverage.py) | ~80 | Empirical coverage of a fixed 95% LGS credible region across a sample-size (N) sweep. |
 | [`visualize_posterior_predictive.py`](visualize_posterior_predictive.py) | ~85 | Posterior predictive check on regression residuals. |
+| [`interactive_bayesian_regression.py`](interactive_bayesian_regression.py) | ~30 | **Interactive** (GUI / web-launchable): `N` / prior-precision sliders tighten the ±2σ posterior-predictive band; readout reports recovered `β0`/`β1` ± posterior std. |
+| [`interactive_lgs_localization.py`](interactive_lgs_localization.py) | ~35 | **Interactive** (GUI / web-launchable): `(y1, y2)` observation sliders slide the posterior mean ellipse toward the fixed prior; readout reports posterior mean/std and distance from prior/observation. |
 
 ## Running
 
@@ -57,11 +59,19 @@ from active_inference import (
 )
 ```
 
+`interactive_bayesian_regression.py` is a thin wrapper around
+`active_inference.visualizations.interactive_bayesian_regression`.
+`interactive_lgs_localization.py` is a thin wrapper around
+`active_inference.visualizations.interactive_lgs_localization`.
+
 ## Smoke Tests
 
 `tests/chapters/test_smoke.py` runs each script via `subprocess` and
-asserts exit code 0 (see `test_chapter_3_scripts_run` and
-`test_chapter_3_animations`).
+asserts exit code 0 (the single parametrized test
+`test_chapter_script_runs_and_exports_raw_data`, run over every discovered
+chapter script). `interactive_bayesian_regression.py` and `interactive_lgs_localization.py`
+are skipped there (filename match on `interactive`) and exercised
+separately by `tests/visualizations/test_interactive.py`.
 
 ## Key Concepts
 

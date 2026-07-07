@@ -24,13 +24,17 @@ Directory: `/chapters/chapter_02/`
 | `example_2_10_gradient_descent.py` | §2.5.2 | Iterative MLE/MAP via gradient descent |
 | `visualize_generative_model.py` | §2.4 | Joint density `p(x, y)` as heatmap + 3-D surface |
 | `interactive_explorer.py` | bonus | Slider-driven exploration (two modes: `full`, `precision`) |
+| `interactive_gradient_descent.py` | §2.5.2 | **Interactive** (GUI / web-launchable): `log10(learning rate)` / `iteration` sliders scrub the gradient-descent trajectory on the MLE loss surface — readout reports the iterate, loss, step size, and converging/diverging status |
 | `animation_sequential.py` | bonus | GIF: posterior collapsing as i.i.d. samples arrive |
 | `animation_gradient_descent.py` | bonus | GIF: MLE/MAP iterate rolling down the loss curve |
 
 Common CLI flags across non-interactive scripts: `--save` (headless); scripts
 that sample data also accept `--seed`. Some scripts accept `--x-true`,
-`--y-obs`, `--n-samples`, `--epsilon2`, `--lr`, `--max-iter` — see individual
-`--help` output.
+`--y-obs`, `--n-samples`, `--n` (the two `animation_*.py` scripts — number of
+frames/grid points, not samples), `--epsilon2`, `--lr`, `--max-iter` — see
+individual `--help` output. `interactive_explorer.py` is the one script with
+a behavior-changing flag: `--mode {full,precision}` (default `full`) switches
+between the four-slider explorer and the single precision-ratio slider.
 
 ## Running
 
@@ -42,7 +46,10 @@ python chapters/chapter_02/example_2_3_precision.py --save
 python chapters/chapter_02/interactive_explorer.py            # full mode
 python chapters/chapter_02/interactive_explorer.py --mode precision
 
-# Batch render all chapter 2 figures (excludes interactive_explorer.py)
+# Interactive gradient-descent trajectory scrubber
+python chapters/chapter_02/interactive_gradient_descent.py
+
+# Batch render all chapter 2 figures (excludes interactive_explorer.py and interactive_gradient_descent.py)
 python scripts/run_all_figures.py --chapters 2
 # or:
 ./scripts/run_all_chapter_02.sh
@@ -68,8 +75,8 @@ menus.
 
 ## Notes
 
-- The `interactive_explorer.py` script is **not** run in smoke tests because it
-  blocks on `plt.show()`.
+- The `interactive_explorer.py` and `interactive_gradient_descent.py` scripts
+  are **not** run in smoke tests because they block on `plt.show()`.
 - Example 2.7 includes a `sequential_inference` helper function (defined in the
   script itself) that manually reproduces the batch result step-by-step,
   demonstrating exchangeability.

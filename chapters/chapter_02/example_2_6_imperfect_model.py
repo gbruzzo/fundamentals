@@ -25,6 +25,7 @@ from active_inference import (
 )
 from active_inference.utils.io import default_figure_dir, ensure_dir
 from active_inference.visualizations import save_or_show
+from active_inference.visualizations.style import COLORS
 
 LOG = get_logger("ch2.ex6")
 
@@ -71,9 +72,9 @@ def main() -> None:
     # Two-panel figure: true generator vs assumed generator + posterior modes vs truth.
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), constrained_layout=True)
 
-    axes[0].plot(x_grid, process.mean(x_grid), color="#d62728", lw=2,
+    axes[0].plot(x_grid, process.mean(x_grid), color=COLORS["truth"], lw=2,
                  label="true (quadratic)")
-    axes[0].plot(x_grid, model.predict_mean(x_grid), color="#1f77b4", lw=2,
+    axes[0].plot(x_grid, model.predict_mean(x_grid), color=COLORS["prior"], lw=2,
                  label="agent (linear)")
     axes[0].set_xlabel("x")
     axes[0].set_ylabel("y")
@@ -83,8 +84,8 @@ def main() -> None:
 
     truth_arr = np.array([r[0] for r in rows])
     mode_arr = np.array([r[1] for r in rows])
-    axes[1].plot(truth_arr, truth_arr, color="black", ls="--", label="ideal")
-    axes[1].plot(truth_arr, mode_arr, "o-", color="#2ca02c",
+    axes[1].plot(truth_arr, truth_arr, color=COLORS["data"], ls="--", label="ideal")
+    axes[1].plot(truth_arr, mode_arr, "o-", color=COLORS["posterior"],
                  label="posterior mode")
     for x_t, m in zip(truth_arr, mode_arr):
         axes[1].annotate(f"{m - x_t:+.2f}", xy=(x_t, m), xytext=(0, 6),

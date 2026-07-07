@@ -21,6 +21,13 @@ try:  # pragma: no cover - metadata lookup is environment dependent
 except PackageNotFoundError:  # editable / source checkouts
     __version__ = "0.1.0"
 
+from .demo_topics import (
+    build_demo,
+    demo_topic_slugs,
+    demo_topic_spec,
+    main_visualize,
+)
+from .demo_workflows import build_bicycle_demo, build_drone_flight_demo, build_eye_saccades_demo
 from .core.compose import (
     Pipeline,
     RunningPosteriorStats,
@@ -467,10 +474,13 @@ from .estimators.variational import (
 )
 from .utils import (
     chapter_data_dir,
+    data_paths_for_demo_figure,
     data_paths_for_figure,
     data_paths_for_extra_figure,
     default_data_dir,
+    default_demo_figure_dir,
     default_figure_dir,
+    demo_data_dir,
     ensure_dir,
     extra_data_dir,
     extract_animation_data,
@@ -479,6 +489,7 @@ from .utils import (
     make_grid,
     save_animation_data,
     save_chapter_data,
+    save_demo_data,
     save_extra_data,
     save_figure_data,
 )
@@ -831,6 +842,13 @@ __all__ = [
     "simulate_social_inference",
     # Chapter 14 — Bayesian mechanics
     "BayesianMechanicsSummary",
+    "build_bicycle_demo",
+    "build_demo",
+    "build_drone_flight_demo",
+    "build_eye_saccades_demo",
+    "demo_topic_slugs",
+    "demo_topic_spec",
+    "main_visualize",
     "MarkovBlanketFlow",
     "bayesian_mechanics_summary",
     "blanket_coupling_matrix",
@@ -844,15 +862,19 @@ __all__ = [
     "get_logger",
     "default_figure_dir",
     "default_data_dir",
+    "default_demo_figure_dir",
     "ensure_dir",
     "chapter_data_dir",
+    "data_paths_for_demo_figure",
     "data_paths_for_figure",
     "data_paths_for_extra_figure",
+    "demo_data_dir",
     "extra_data_dir",
     "extract_animation_data",
     "extract_figure_data",
     "save_animation_data",
     "save_chapter_data",
+    "save_demo_data",
     "save_extra_data",
     "save_figure_data",
     "run_menu",

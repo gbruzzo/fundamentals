@@ -10,6 +10,12 @@ recipe assumes you've created the environment with::
 and works with no further setup. Wrap any command with ``uv run`` to
 invoke it inside the project's virtualenv without activating it manually.
 
+> **Learning by hand:** this repo has no LLM stage — the understanding comes
+> from running these recipes and changing a parameter in each, then re-running
+> and watching the figure/data change. For the full deliberate-practice loop
+> (read the orchestrator → read the `src/` logic → run → modify → map to the
+> book symbol → lock in with a test), see [`learn_by_hand.md`](learn_by_hand.md).
+
 ## 1. End-to-end Bayesian inference in 6 lines
 
 ```python

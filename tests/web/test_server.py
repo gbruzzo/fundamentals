@@ -17,6 +17,7 @@ import pytest
 
 from active_inference.web import server as web_server
 from active_inference.web.templates import CSS, JS, render_index_html
+from active_inference.demo_topics import demo_topic_slugs
 from active_inference.extra_topics import extra_topic_slugs
 
 
@@ -99,6 +100,8 @@ class TestRoutes:
         assert "entropy" in extra_slugs
         assert "variational_free_energy" in extra_slugs
         assert set(extra_topic_slugs()).issubset(extra_slugs)
+        demo_slugs = {d["slug"] for d in data["demos"]}
+        assert set(demo_topic_slugs()).issubset(demo_slugs)
         # Doc pages should at least include the architecture / cookbook entries.
         titles = {d["title"] for d in data["docs"]}
         assert "Architecture" in titles
@@ -125,6 +128,16 @@ class TestRoutes:
         assert "visualize_entropy.py" in names
         assert "simulate_entropy.py" in names
         assert "interactive_entropy.py" in names
+        assert isinstance(data["figures"], list)
+        assert data["readme_html"]
+
+    def test_demo_payload_shape(self, server):
+        status, _, body = _get(server, "/api/demo/eye_saccades")
+        assert status == 200
+        data = json.loads(body)
+        assert data["slug"] == "eye_saccades"
+        names = {s["name"] for s in data["scripts"]}
+        assert "visualize_eye_saccades.py" in names
         assert isinstance(data["figures"], list)
         assert data["readme_html"]
 

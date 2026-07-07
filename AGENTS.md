@@ -20,6 +20,13 @@ Chapters 1–10 are the stable Part I/II spine; Chapters 11–14 are first-class
 Part III companion implementations that must stay source-backed as manuscript
 examples are audited into tests.
 
+This repository ships **no LLM/code-generation stage**: every figure, raw-data
+sidecar, notebook, and test in `output/` is produced by a script you run and a
+library you can read. The intended workflow is deliberate practice — run an
+orchestrator, observe the artifact, change a parameter, re-run — and the
+validators exist to catch real gaps, not to be satisfied by patched output. See
+[`docs/learn_by_hand.md`](docs/learn_by_hand.md) for the by-hand learning loop.
+
 ## Architecture
 
 The codebase follows a two-layer architecture:
@@ -29,7 +36,7 @@ The codebase follows a two-layer architecture:
   `visualizations`, `utils`, plus the strict-UI peers `menu` (stdlib text
   menu) and `web` (stdlib local web server).
 - **Layer 2 (orchestrators):** `chapters/chapter_01/` through
-  `chapters/chapter_14/` plus `extras/<topic>/` — thin scripts (≤ ~120
+  `chapters/chapter_14/` plus `extras/<topic>/` and `demo/<slug>/` — thin scripts (≤ ~120
   lines each) that wire library components together to produce figures and
   numerical results.
 
@@ -65,11 +72,13 @@ domain logic.
 | `chapters/chapter_13/` | robotics navigation/control and social-inference application examples |
 | `chapters/chapter_14/` | ergodic density, entropy bounds, Bayesian mechanics, and Markov blankets |
 | `extras/` | cross-cutting topic orchestrators beyond the chapter spine, generated from the `active_inference.extra_topics` registry |
+| `demo/` | application demos (eye saccades, bicycle, drone flight) from `active_inference.demo_topics` + `demo_workflows` |
 | `tests/` | pytest unit tests + chapter/extras smoke tests + provenance validators |
 | `docs/` | Architecture, notation, chapter concept maps, topic walkthroughs, uv workflow, coverage/provenance references |
 | `scripts/` | Batch figure renderer (`run_all_figures.py`), source-spine/raw-data/rendered/provenance validators, and per-chapter shell wrappers |
 | `output/figures/` | Generated PNGs/GIFs (gitignored, regenerated via scripts) |
 | `output/data/` | Generated raw-data NPZ arrays plus JSON metadata/manifests for every saved non-interactive chapter or extras artifact |
+| `output/notebooks/` | Generated Jupyter notebooks per chapter, extras topic, and demo (gitignored, regenerated via `scripts/export_notebooks.py`) |
 
 ## Ground Truth Sources
 
@@ -97,17 +106,18 @@ domain logic.
 
 - All variances are *variances*, not standard deviations.
 - Densities are evaluated on 1-D NumPy grids; integration uses `np.trapezoid`.
-- Every chapter and extras script accepts `--save` for headless rendering;
+- Every chapter, extras, and demo script accepts `--save` for headless rendering;
   stochastic scripts also accept `--seed` for reproducibility.
-- With `--save`, every non-interactive chapter or extras script must produce
+- With `--save`, every non-interactive chapter, extras, or demo script must produce
   both the visual artifact and at least one raw-data sidecar. Chapters write
   `output/data/chapter_NN/<stem>.npz` + `<stem>.json`; extras write
-  `output/data/extras/<topic>/<stem>.npz` + `<stem>.json`. Use
-  `save_chapter_data` / `save_extra_data` directly for bespoke exports or the
+  `output/data/extras/<topic>/<stem>.npz` + `<stem>.json`; demos write
+  `output/data/demo/<slug>/<stem>.npz` + `<stem>.json`. Use
+  `save_chapter_data` / `save_extra_data` / `save_demo_data` directly for bespoke exports or the
   shared visualization save helpers for figure-derived exports.
 - Random number generators are passed explicitly via `numpy.random.Generator`
   — no global state.
-- Chapter and extras scripts import only from `active_inference`, the Python
+- Chapter, extras, and demo scripts import only from `active_inference`, the Python
   standard library, and the canonical scientific plotting dependencies already
   required by the script surface (`numpy`, `matplotlib`, and, where already
   needed by an existing workflow, `scipy`). They never import from other chapter
@@ -147,8 +157,12 @@ uv run pytest tests/core tests/estimators tests/utils tests/visualizations
 # Smoke tests (run every chapter script with --save)
 uv run pytest tests/chapters -v
 
+# Demo smoke tests
+uv run pytest tests/demo tests/test_demo_workflows -v
+
 # Validate generated raw-data sidecars
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+uv run python scripts/validate_raw_data_exports.py --root output/data --demos eye_saccades bicycle drone_flight
 
 # Validate all generated chapter and extras raw-data sidecars
 uv run python scripts/validate_raw_data_exports.py --root output/data
@@ -158,6 +172,10 @@ uv run python scripts/validate_orchestrator_contracts.py
 uv run python scripts/validate_book_topic_coverage.py --require-rendered
 uv run python scripts/validate_orchestrator_provenance.py
 uv run python scripts/validate_source_spine.py --require-pdf
+
+# Export and validate Jupyter notebooks
+uv run python scripts/export_notebooks.py
+uv run python scripts/validate_notebook_exports.py
 
 # Coverage
 uv run pytest --cov=active_inference --cov-report=term-missing
@@ -170,8 +188,8 @@ that mainly glue imports).
 
 1. Add a method or class to the appropriate `src/active_inference/` submodule
    (with corresponding unit tests in `tests/<sub>/`).
-2. Create a thin orchestrator in the appropriate `chapters/chapter_<N>/`
-   directory or `extras/<topic>/` directory (≤ ~120 lines; imports only from
+2. Create a thin orchestrator in the appropriate `chapters/chapter_<N>/`,
+   `extras/<topic>/`, or `demo/<slug>/` directory (≤ ~120 lines; imports only from
    `active_inference`, stdlib, and narrowly scoped `numpy` / `matplotlib` /
    existing `scipy` rendering glue). Put reusable workflow logic in
    `src/active_inference/`, not in the wrapper.
@@ -181,8 +199,9 @@ that mainly glue imports).
 5. Ensure `--save` writes reconstructable raw data. Prefer plotting through
    `save_or_show` / `save_animation`; if the script has non-plotted arrays,
    call `save_chapter_data(chapter, stem, arrays, metadata, figures=...)` for
-   chapter scripts or `save_extra_data(topic, stem, arrays, metadata,
-   figures=...)` for extras.
+   chapter scripts, `save_extra_data(topic, stem, arrays, metadata,
+   figures=...)` for extras, or `save_demo_data(slug, stem, arrays, metadata,
+   figures=...)` for demos.
 6. The smoke tests and `active_inference.menu` discovery pick the file up
    automatically as long as it follows the `example_*.py` / `animation_*.py` /
    `visualize_*.py` / `interactive_*.py` / `0N_*.py` naming convention.

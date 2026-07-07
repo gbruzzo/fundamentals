@@ -26,6 +26,8 @@ if str(SRC_ROOT) not in sys.path:
 
 from active_inference.menu.runner import (  # noqa: E402
     discover_chapters,
+    discover_demo_scripts,
+    discover_demos,
     discover_extra_scripts,
     discover_extras,
     discover_scripts,
@@ -45,6 +47,8 @@ def parse_args() -> argparse.Namespace:
                    choices=discovered_chapters)
     p.add_argument("--extras", nargs="*", default=None,
                    help="Extras topic slugs to render; pass without values for all extras")
+    p.add_argument("--demos", nargs="*", default=None,
+                   help="Demo topic slugs to render; pass without values for all demos")
     p.add_argument("--no-chapters", action="store_true",
                    help="Skip chapter scripts; useful with --extras for extras-only renders")
     p.add_argument("--clean", action="store_true",
@@ -105,6 +109,16 @@ def extra_scripts(topic: str, *, include_animations: bool = True) -> list[Path]:
     return [entry.path for entry in entries]
 
 
+def demo_scripts(slug: str, *, include_animations: bool = True) -> list[Path]:
+    """Return non-interactive scripts for one demo topic."""
+    entries = discover_demo_scripts(
+        slug,
+        include_animations=include_animations,
+        include_visualizations=True,
+    )
+    return [entry.path for entry in entries]
+
+
 def run(script: Path) -> int:
     """Support this repository command-line validation or rendering script."""
     env = os.environ.copy()
@@ -149,6 +163,23 @@ def main() -> int:
         for topic in requested:
             print(f"\n=== Extra: {topic} ===")
             for s in extra_scripts(topic, include_animations=not args.no_animations):
+                rc = run(s)
+                if rc != 0:
+                    failed.append(s)
+                    if not args.keep_going:
+                        print(f"X {s.name} failed; aborting (use --keep-going to continue).")
+                        return rc
+
+    if args.demos is not None:
+        all_slugs = [entry.slug for entry in discover_demos()]
+        requested = all_slugs if args.demos == [] else list(args.demos)
+        unknown = sorted(set(requested) - set(all_slugs))
+        if unknown:
+            print(f"Unknown demo topics: {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        for slug in requested:
+            print(f"\n=== Demo: {slug} ===")
+            for s in demo_scripts(slug, include_animations=not args.no_animations):
                 rc = run(s)
                 if rc != 0:
                     failed.append(s)

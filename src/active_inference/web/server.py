@@ -40,14 +40,18 @@ from pathlib import Path
 from typing import Any, Sequence
 from urllib.parse import unquote, urlparse
 
+from ..demo_topics import demo_topic_spec
 from ..menu.runner import (
     CHAPTER_DIRS,
+    DEMO_TOPIC_DIRS,
     EXTRA_TOPIC_DIRS,
     OUTPUT_DIR,
     REPO_ROOT,
     ScriptEntry,
     _build_env,
     discover_chapters,
+    discover_demo_scripts,
+    discover_demos,
     discover_extra_scripts,
     discover_extras,
     discover_scripts,
@@ -77,6 +81,11 @@ def _chapter_figure_dir(chapter: int) -> Path:
 def _extra_figure_dir(topic: str) -> Path:
     """Return extras-topic figure directory used for discovery and display."""
     return OUTPUT_DIR / "extras" / topic
+
+
+def _demo_figure_dir(slug: str) -> Path:
+    """Return demo-topic figure directory used for discovery and display."""
+    return OUTPUT_DIR / "demo" / slug
 
 
 _DOC_SUMMARY_LIMIT = 220
@@ -138,6 +147,54 @@ def _list_extra_figures(topic: str) -> list[dict[str, Any]]:
             "generated_by": _guess_extra_generator(p, topic),
         })
     return out
+
+
+def _list_demo_figures(slug: str) -> list[dict[str, Any]]:
+    """List rendered figure files for one demo topic."""
+    base = _demo_figure_dir(slug)
+    if not base.is_dir():
+        return []
+    out: list[dict[str, Any]] = []
+    for p in sorted(base.iterdir()):
+        if not p.is_file():
+            continue
+        if p.suffix.lower() not in {".png", ".gif", ".jpg", ".jpeg", ".webp", ".svg"}:
+            continue
+        stat = p.stat()
+        width, height = _image_dimensions(p)
+        out.append({
+            "name": p.name,
+            "url": f"/figures/demo/{slug}/{p.name}",
+            "kind": "animation" if p.suffix.lower() == ".gif" else "static",
+            "extension": p.suffix.lower().lstrip("."),
+            "size": stat.st_size,
+            "size_human": _human_bytes(stat.st_size),
+            "mtime": stat.st_mtime,
+            "mtime_human": _human_time(stat.st_mtime),
+            "width": width,
+            "height": height,
+            "generated_by": p.stem,
+        })
+    return out
+
+
+def _demo_registry_payload(slug: str) -> dict[str, Any]:
+    """Return registry metadata for one demo topic."""
+    try:
+        spec = demo_topic_spec(slug)
+    except KeyError:
+        return {
+            "title": slug.replace("_", " ").title(),
+            "summary": "Application demo",
+            "chapters": [],
+            "source_apis": [],
+        }
+    return {
+        "title": spec.title,
+        "summary": spec.summary,
+        "chapters": list(spec.chapters),
+        "source_apis": list(spec.source_apis),
+    }
 
 
 def _extra_registry_payload(topic: str) -> dict[str, Any]:
@@ -648,6 +705,9 @@ class _Handler(BaseHTTPRequestHandler):
             m = re.match(r"^/api/extra/([a-z0-9_]+)$", path)
             if m:
                 return self._send_json(self._extra_payload(m.group(1)))
+            m = re.match(r"^/api/demo/([a-z0-9_]+)$", path)
+            if m:
+                return self._send_json(self._demo_payload(m.group(1)))
             m = re.match(r"^/api/doc/(.+)$", path)
             if m:
                 return self._send_json(self._doc_payload(unquote(m.group(1))))
@@ -656,6 +716,11 @@ class _Handler(BaseHTTPRequestHandler):
                 topic = m.group(1)
                 name = unquote(m.group(2))
                 return self._serve_static_file(_extra_figure_dir(topic), name)
+            m = re.match(r"^/figures/demo/([a-z0-9_]+)/(.+)$", path)
+            if m:
+                slug = m.group(1)
+                name = unquote(m.group(2))
+                return self._serve_static_file(_demo_figure_dir(slug), name)
             m = re.match(r"^/figures/(\d{2})/(.+)$", path)
             if m:
                 chapter = int(m.group(1))
@@ -725,9 +790,28 @@ class _Handler(BaseHTTPRequestHandler):
                 "chapters": list(entry.chapters),
                 "sections": list(entry.sections),
             })
+        demos = []
+        for entry in discover_demos():
+            scripts = entry.scripts
+            kind_counts: dict[str, int] = {}
+            for s in scripts:
+                kind_counts[s.kind] = kind_counts.get(s.kind, 0) + 1
+            figures = _list_demo_figures(entry.slug)
+            demos.append({
+                "slug": entry.slug,
+                "title": entry.title,
+                "relative": entry.relative,
+                "scripts": [_script_meta(s) for s in scripts],
+                "kind_counts": kind_counts,
+                "figure_count": len(figures),
+                "subtitle": "Application demo",
+                "summary": entry.summary,
+                "chapters": list(entry.chapters),
+            })
         return {
             "chapters": chapters,
             "extras": extras,
+            "demos": demos,
             "docs": _list_doc_pages(),
             "repo": str(REPO_ROOT),
         }
@@ -778,6 +862,30 @@ class _Handler(BaseHTTPRequestHandler):
             if readme_path.is_file() else None,
         }
 
+    def _demo_payload(self, slug: str) -> dict[str, Any]:
+        """Return demo-topic metadata used for discovery and display."""
+        if slug not in DEMO_TOPIC_DIRS:
+            raise ValueError(f"Unknown demo topic {slug!r}")
+        scripts = discover_demo_scripts(slug, include_interactive=True)
+        topic_dir = DEMO_TOPIC_DIRS[slug]
+        readme_path = topic_dir / "README.md"
+        registry = _demo_registry_payload(slug)
+        return {
+            "slug": slug,
+            "title": registry["title"],
+            "subtitle": "Application demo",
+            "relative": str(topic_dir.relative_to(REPO_ROOT)),
+            "scripts": [_script_meta(s) for s in scripts],
+            "figures": _list_demo_figures(slug),
+            "docs": [],
+            **registry,
+            "readme_html": _md_to_html(readme_path.read_text(encoding="utf-8",
+                                                              errors="replace"))
+            if readme_path.is_file() else None,
+            "readme_source": str(readme_path.relative_to(REPO_ROOT))
+            if readme_path.is_file() else None,
+        }
+
     def _doc_payload(self, doc_id: str) -> dict[str, Any]:
         """Return documentation metadata used by the local browser UI."""
         rel = doc_id.replace("__", "/")
@@ -794,6 +902,24 @@ class _Handler(BaseHTTPRequestHandler):
     def _run_payload(self, data: dict[str, Any]) -> dict[str, Any]:
         """Support request handling for the local chapter browser UI."""
         name = str(data.get("script", "")).strip()
+        demo = str(data.get("demo", "")).strip()
+        if demo:
+            if demo not in DEMO_TOPIC_DIRS:
+                raise ValueError(f"Unknown demo topic {demo!r}")
+            scripts = discover_demo_scripts(demo, include_interactive=True)
+            match = next((s for s in scripts if s.name == name), None)
+            if match is None:
+                raise ValueError(f"Unknown script {name!r}")
+            if match.kind == "interactive":
+                raise ValueError("Interactive scripts must be launched via "
+                                 "/api/launch-interactive, not /api/run")
+            completed = run_script(match, save=True, capture_output=True,
+                                   timeout=300, quiet=True)
+            return {
+                "returncode": completed.returncode,
+                "stdout_tail": (completed.stdout or "").splitlines()[-25:],
+                "stderr_tail": (completed.stderr or "").splitlines()[-25:],
+            }
         topic = str(data.get("topic", "")).strip()
         if topic:
             if topic not in EXTRA_TOPIC_DIRS:
@@ -845,6 +971,14 @@ class _Handler(BaseHTTPRequestHandler):
         if match is None:
             for topic in EXTRA_TOPIC_DIRS:
                 for s in discover_extra_scripts(topic, include_interactive=True):
+                    if s.name == name and s.kind == "interactive":
+                        match = s
+                        break
+                if match is not None:
+                    break
+        if match is None:
+            for slug in DEMO_TOPIC_DIRS:
+                for s in discover_demo_scripts(slug, include_interactive=True):
                     if s.name == name and s.kind == "interactive":
                         match = s
                         break

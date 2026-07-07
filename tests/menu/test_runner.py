@@ -83,6 +83,14 @@ class TestDiscovery:
         }.issubset(slugs)
         assert slugs[:6] == list(extra_topic_slugs())[:6]
 
+    def test_discover_demos_returns_topic_entries(self) -> None:
+        from active_inference.demo_topics import demo_topic_slugs
+
+        demos = runner.discover_demos()
+        slugs = [entry.slug for entry in demos]
+        assert slugs == list(demo_topic_slugs())
+        assert slugs == ["eye_saccades", "bicycle", "drone_flight"]
+
     def test_extra_topic_scripts_include_declared_kinds(self) -> None:
         scripts = runner.discover_extra_scripts("entropy")
         names = [script.name for script in scripts]

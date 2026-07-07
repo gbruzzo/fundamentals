@@ -23,6 +23,7 @@ CHAPTER_NAME_RE = re.compile(
     r"visualize_[A-Za-z0-9_]+|interactive_[A-Za-z0-9_]+|simulate_[A-Za-z0-9_]+|animation_[A-Za-z0-9_]+)\.py$"
 )
 EXTRAS_NAME_RE = re.compile(r"^(?:visualize|simulate|animation|interactive)_[A-Za-z0-9_]+\.py$")
+DEMO_NAME_RE = EXTRAS_NAME_RE
 SOFT_LINE_LIMIT = 120
 
 try:
@@ -61,6 +62,7 @@ def orchestrator_files(root: Path) -> list[Path]:
     paths = [
         *root.glob("chapters/chapter_*/*.py"),
         *root.glob("extras/*/*.py"),
+        *root.glob("demo/*/*.py"),
     ]
     return sorted(path for path in paths if not path.name.startswith("_"))
 
@@ -77,6 +79,8 @@ def expected_name(path: Path, root: Path) -> bool:
         return bool(CHAPTER_NAME_RE.fullmatch(path.name))
     if relative.parts[0] == "extras":
         return bool(EXTRAS_NAME_RE.fullmatch(path.name))
+    if relative.parts[0] == "demo":
+        return bool(DEMO_NAME_RE.fullmatch(path.name))
     return False
 
 
@@ -133,6 +137,12 @@ def delegates_to_extras_cli(path: Path) -> bool:
     )
 
 
+def delegates_to_demo_cli(path: Path) -> bool:
+    """Return whether a demo wrapper delegates to the shared demo CLI parser."""
+    text = path.read_text(encoding="utf-8")
+    return "active_inference.demo_topics" in text and "main_visualize(" in text
+
+
 def validate_file(path: Path, root: Path) -> tuple[list[Finding], list[Finding]]:
     """Return hard errors and soft warnings for one orchestrator file."""
     errors: list[Finding] = []
@@ -144,14 +154,14 @@ def validate_file(path: Path, root: Path) -> tuple[list[Finding], list[Finding]]
         return [Finding(relative, str(exc))], []
 
     if not expected_name(path, root):
-        errors.append(Finding(relative, "filename is not discoverable by chapter/extras naming conventions"))
+        errors.append(Finding(relative, "filename is not discoverable by chapter/extras/demo naming conventions"))
 
     roots = list(import_roots(tree))
     imported_root_names = {root_name for root_name, _node in roots}
     if "." in imported_root_names:
         errors.append(Finding(relative, "relative imports are not allowed in orchestrator scripts"))
-    if {"chapters", "extras"} & imported_root_names:
-        errors.append(Finding(relative, "orchestrators must not import chapter/extras scripts"))
+    if {"chapters", "extras", "demo"} & imported_root_names:
+        errors.append(Finding(relative, "orchestrators must not import chapter/extras/demo scripts"))
     if "active_inference" not in imported_root_names:
         errors.append(Finding(relative, "orchestrators must import reusable logic through active_inference"))
 
@@ -164,7 +174,7 @@ def validate_file(path: Path, root: Path) -> tuple[list[Finding], list[Finding]]
             continue
         errors.append(Finding(relative, f"disallowed import root {root_name!r} at line {getattr(node, 'lineno', '?')}"))
 
-    if not is_interactive(path) and not delegates_to_extras_cli(path):
+    if not is_interactive(path) and not (delegates_to_extras_cli(path) or delegates_to_demo_cli(path)):
         if not has_argument(tree, "--save"):
             errors.append(Finding(relative, "non-interactive orchestrator is missing a --save CLI flag"))
         elif not text_uses_save_gate(path):

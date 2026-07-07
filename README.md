@@ -20,7 +20,7 @@ fundamentals/
 │   ├── core/                  ← distributions, generative process/model, inference, diagnostics, composition, validators
 │   ├── estimators/            ← MLE, MAP, gradient descent, linear regression, EM / factor analysis
 │   ├── visualizations/        ← static plots, slider explorers, animations, diagnostic figures, style
-│   ├── utils/                 ← grids, logging, paths, NPZ+JSON data exports
+│   ├── utils/                 ← grids, logging, paths, NPZ+JSON data exports, notebook export
 │   ├── menu/                  ← stdlib text menu used by run.sh
 │   ├── web/                   ← stdlib local web UI launched by run.sh --web
 │   └── source_spine.py        ← PDF ledger: Ch.1-14, Appendices A-D, no Ch.15
@@ -40,11 +40,13 @@ fundamentals/
 │   ├── chapter_13/            ← robotics and social applications (Part III)
 │   └── chapter_14/            ← ergodic density, Bayesian mechanics, and Markov blankets (Part III)
 ├── extras/                    ← cross-cutting topic orchestrators beyond the chapter spine
+├── demo/                      ← application demos (eye saccades, bicycle, drone flight)
 ├── docs/                      ← architecture, notation, chapter prose, topic walkthroughs, reference, statistics
 ├── scripts/                   ← batch runners, figure pipeline
 ├── tests/                     ← pytest suite (unit + chapter smoke tests)
 ├── output/figures/            ← regenerated PNGs / GIFs per chapter and extras topic
-└── output/data/               ← regenerated NPZ arrays + JSON metadata per chapter and extras topic
+├── output/data/               ← regenerated NPZ arrays + JSON metadata per chapter, extras topic, and demo
+└── output/notebooks/          ← regenerated Jupyter notebooks per chapter, extras topic, and demo
 ```
 
 ## Install
@@ -58,7 +60,8 @@ This project is uv-first; plain `pip` still works as a fallback.
 git clone https://github.com/ActiveInferenceInstitute/fundamentals
 cd fundamentals
 uv sync                       # creates .venv, installs runtime + dev deps from uv.lock
-uv sync --extra interactive   # optional: ipywidgets / jupyter for notebooks
+uv sync --extra notebooks     # optional: Jupyter + notebook export deps
+uv sync --extra interactive   # optional: ipywidgets / jupyter for local exploration
 ```
 
 Then either activate the venv (`source .venv/bin/activate`) or prefix every
@@ -93,6 +96,8 @@ web UI sits behind `--web`:
 ./run.sh --keep-going           # continue past failing scripts
 uv run python -m active_inference.menu --extras          # render all extras
 uv run python -m active_inference.menu --extra entropy   # one extras topic
+uv run python -m active_inference.menu --demos           # render all application demos
+uv run python -m active_inference.menu --demo bicycle    # one demo topic
 
 # Local browser interface — one tab per chapter, gallery + render buttons:
 ./run.sh --web                  # default http://127.0.0.1:8765/
@@ -122,6 +127,8 @@ uv run python scripts/run_all_figures.py --chapters 2 --no-animations
 uv run python scripts/run_all_figures.py --chapters 4 --clean
 uv run python scripts/run_all_figures.py --no-chapters --extras entropy expected_free_energy
 uv run python scripts/run_all_figures.py --no-chapters --extras
+uv run python scripts/run_all_figures.py --no-chapters --demos eye_saccades bicycle drone_flight
+uv run python scripts/run_all_figures.py --no-chapters --demos
 uv run python scripts/validate_rendered_figures.py --root output/figures
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 uv run python scripts/validate_raw_data_exports.py --root output/data
@@ -129,6 +136,12 @@ uv run python scripts/validate_book_topic_coverage.py
 uv run python scripts/validate_book_topic_coverage.py --require-rendered
 uv run python scripts/validate_orchestrator_provenance.py
 uv run python scripts/validate_source_spine.py --require-pdf
+
+# export Jupyter notebooks (chapters + extras + demos)
+uv sync --extra notebooks
+uv run python scripts/export_notebooks.py
+uv run python scripts/export_notebooks.py --chapters 3
+uv run python scripts/validate_notebook_exports.py
 
 # unit tests
 uv run pytest
@@ -138,6 +151,9 @@ uv run pytest tests/chapters -v
 
 # extras smoke tests only
 uv run pytest tests/extras -v
+
+# application demo smoke tests
+uv run pytest tests/demo -v
 ```
 
 Each chapter script runs standalone too:
@@ -149,6 +165,9 @@ uv run python chapters/chapter_03/example_3_5_bayesian_linear_regression.py --sa
 uv run python chapters/chapter_02/interactive_explorer.py            # GUI window
 uv run python extras/temperature/visualize_temperature.py --save
 uv run python extras/temperature/interactive_temperature.py          # GUI window
+uv run python demo/eye_saccades/visualize_eye_saccades.py --save
+uv run python demo/bicycle/visualize_bicycle.py --save --seed 7
+uv run python demo/drone_flight/visualize_drone_flight.py --save --seed 11
 ```
 
 When a non-interactive script is run with `--save`, the saved visual is paired
@@ -404,6 +423,7 @@ Chapters 1-14 and Appendices A-D, and no Chapter 15.
 | `notation.md` | Symbol-to-identifier mapping for variables, parameters, densities, algorithms |
 | `cookbook.md` | Copy-paste recipes for the 10 most-used workflows |
 | `reading_order.md` | Reader-path guide (book follower, library user, contributor) |
+| `learn_by_hand.md` | By-hand learning loop: how to practice deliberately with no LLM stage |
 | `chapters/` | Per-book-chapter concept maps (`chapter_01.md` … `chapter_14.md`) |
 | `topics/` | Concept walkthroughs (Bayesian inference, generative models, learning, FEP, …) |
 | `statistics/` | Statistical-tool references (KL, entropy, scoring rules, calibration, …) |

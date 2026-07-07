@@ -10,6 +10,8 @@ historical batch workflow.
 | File | Description |
 |---|---|
 | `run_all_figures.py` | Render all chapter figures to `output/figures/`. |
+| `export_notebooks.py` | Export chapter, extras, and demo orchestrators to `output/notebooks/`. |
+| `validate_notebook_exports.py` | Validate exported `.ipynb` files against discovery inventory. |
 | `validate_book_topic_coverage.py` | Check the book-topic coverage matrix against the live extras registry and folders; `--require-rendered` also verifies expected extras PNG/GIF and NPZ+JSON artifacts. |
 | `validate_orchestrator_contracts.py` | Enforce chapter/extras filename discovery, allowed imports, and non-interactive `--save` support; warn on duplicate stems and line-count drift. |
 | `validate_orchestrator_provenance.py` | Check that chapter and extras wrappers route through `active_inference`, avoid sibling-wrapper imports, and expose every registry-declared extras wrapper. |
@@ -52,6 +54,12 @@ uv run python scripts/validate_orchestrator_provenance.py
 uv run python scripts/validate_source_spine.py --require-pdf
 uv run python scripts/validate_raw_data_exports.py --root output/data --chapters 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 uv run python scripts/validate_raw_data_exports.py --root output/data
+
+# Export Jupyter notebooks
+uv sync --extra notebooks
+uv run python scripts/export_notebooks.py
+uv run python scripts/export_notebooks.py --chapters 1 2 3
+uv run python scripts/validate_notebook_exports.py
 
 # Combine flags
 uv run python scripts/run_all_figures.py --clean --keep-going --chapters 2
@@ -116,6 +124,8 @@ surface fits the situation:
 | Orchestrator/source-method QA | `scripts/validate_orchestrator_provenance.py` |
 | Artifact QA after render | `scripts/validate_rendered_figures.py` |
 | Raw-data QA after render | `scripts/validate_raw_data_exports.py` |
+| Notebook export | `scripts/export_notebooks.py` |
+| Notebook QA after export | `scripts/validate_notebook_exports.py` |
 | Re-render a single chapter | any of the three |
 | Re-render extras topics | `uv run python -m active_inference.menu --extras` |
 | Programmatic discovery | `active_inference.menu.runner` |

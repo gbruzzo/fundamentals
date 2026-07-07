@@ -25,6 +25,7 @@ uv run python -m active_inference.menu --all   # batch-render every chapter
 | Command | What it does |
 |---|---|
 | `uv sync` | Materialize `.venv/` from `uv.lock`. Installs the runtime dependencies plus the `dev` group. |
+| `uv sync --extra notebooks` | Add `nbformat`, `jupyter`, and `ipywidgets` for notebook export and local Jupyter use. |
 | `uv sync --extra interactive` | Add the optional `ipywidgets` / `jupyter` extras. |
 | `uv sync --no-dev` | Runtime dependencies only — useful in shrinking CI containers. |
 | `uv lock` | Resolve `pyproject.toml` and rewrite `uv.lock`. Run this after adding a dependency. |
@@ -44,6 +45,8 @@ uv run python -c "import active_inference; print(active_inference.__version__)"
 uv run pytest tests/core
 uv run ruff check src tests
 uv run python scripts/run_all_figures.py --chapters 1 --clean
+uv run python scripts/export_notebooks.py
+uv run python scripts/validate_notebook_exports.py
 ```
 
 The top-level [`../run.sh`](../run.sh) prefers `uv run`, falls back to
@@ -54,7 +57,8 @@ pre-baked image's `python`).
 ## Adding a dependency
 
 1. Edit `pyproject.toml`: add the package to `[project].dependencies`
-   (runtime), `[project.optional-dependencies].interactive` (notebooks),
+   (runtime), `[project.optional-dependencies].notebooks` (Jupyter export),
+   `[project.optional-dependencies].interactive` (notebooks),
    or `[dependency-groups].dev` (developer tooling).
 2. Run `uv lock` to update `uv.lock`.
 3. Run `uv sync` to install it locally.

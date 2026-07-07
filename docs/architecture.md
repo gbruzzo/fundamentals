@@ -8,7 +8,7 @@ class so chapter scripts can mix and match them.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ chapters/<chapter>/ and extras/<topic>/                      │  thin orchestrators
+│ chapters/<chapter>/, extras/<topic>/, demo/<slug>/           │  thin orchestrators
 │  └── 30–120 LOC scripts importing from `active_inference`    │
 └──────────────────────┬───────────────────────────────────────┘
                        │
@@ -23,6 +23,8 @@ class so chapter scripts can mix and match them.
 ┌──────────────────────────────────────────────────────────────┐
 │ src/active_inference/extra_topics.py                         │  extras registry,
 │   topic metadata, deterministic demos, CLI runners           │  simulations, GIFs
+│ src/active_inference/demo_topics.py                          │  demo registry + CLI
+│ src/active_inference/demo_workflows.py                         │  application demo builders
 └──────────────────────┬───────────────────────────────────────┘
                        │
                        ▼
@@ -72,7 +74,8 @@ the inference engine without touching the chapter scripts.
 
 The implementation has two linked flows: import dependencies point downward
 through the library layers, while rendered artifacts and raw-data sidecars flow
-out from chapter and extras scripts into `output/` and are checked by validators.
+out from chapter and extras scripts into `output/` (figures, data, and
+notebooks) and are checked by validators.
 
 ```mermaid
 flowchart TB
@@ -85,9 +88,10 @@ flowchart TB
     V["visualizations<br/>figures, animations, diagnostics"]
     E["estimators<br/>iterative algorithms and simulations"]
     K["core<br/>models, inference, VFE, POMDP math"]
-    X["utils<br/>grids, paths, logging, NPZ plus JSON export"]
+    X["utils<br/>grids, paths, logging, NPZ plus JSON export, notebook export"]
     F["output/figures<br/>PNG and GIF artifacts"]
     D["output/data<br/>NPZ arrays plus JSON manifests"]
+    N["output/notebooks<br/>Jupyter notebooks per chapter, extras, demo"]
     T["tests and validators<br/>pytest, raw/render/book/provenance validators"]
 
     U --> C
@@ -116,8 +120,10 @@ flowchart TB
     V --> D
     C --> D
     R --> D
+    X --> N
     F --> T
     D --> T
+    N --> T
     C --> T
     K --> T
 ```

@@ -39,6 +39,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+notebooks = [
+    "nbformat>=5.10",
+    "jupyter>=1.0",
+    "ipywidgets>=8.0",
+]
 interactive = [
     "ipywidgets>=8.0",
     "jupyter>=1.0",
@@ -47,6 +52,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
+    "nbformat>=5.10",
 ]
 
 [project.urls]
@@ -81,6 +87,7 @@ target-version = "py39"
 # lockfile, and `uv run` makes ad-hoc invocations painless:
 #
 #     uv sync                       # create .venv + install everything
+#     uv sync --extra notebooks     # add notebook export + Jupyter deps
 #     uv sync --extra interactive   # add the optional notebook deps
 #     uv run pytest                 # run the test suite
 #     uv run ./run.sh               # launch the chapter runner menu
@@ -96,4 +103,5 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "ruff>=0.1.0",
+    "nbformat>=5.10",
 ]

@@ -8,6 +8,9 @@ Tests for `src/active_inference/utils/`.
 src/active_inference/utils/<module>.py   ↔   tests/utils/test_<module>.py
 ```
 
+`test_notebooks.py` validates notebook structure and discovery parity without
+executing notebook kernels.
+
 ## Conventions
 
 - Use the `tmp_path` pytest fixture for any test that touches the

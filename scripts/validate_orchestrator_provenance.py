@@ -14,6 +14,7 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from active_inference.demo_topics import demo_topic_slugs  # noqa: E402
 from active_inference.extra_topics import extra_topic_slugs, extra_topic_spec  # noqa: E402
 
 
@@ -38,6 +39,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--chapters-root", type=Path, default=REPO_ROOT / "chapters")
     parser.add_argument("--extras-root", type=Path, default=REPO_ROOT / "extras")
+    parser.add_argument("--demo-root", type=Path, default=REPO_ROOT / "demo")
     return parser.parse_args(argv)
 
 
@@ -101,7 +103,7 @@ def _validate_file(path: Path, *, sibling_modules: set[str]) -> list[str]:
         if root in sibling_modules and is_from:
             errors.append(f"{path}:{line}: sibling script import {module!r}")
             continue
-        if root in {"chapters", "extras"}:
+        if root in {"chapters", "extras", "demo"}:
             errors.append(f"{path}:{line}: cross-orchestrator import {module!r}")
             continue
         if root and root not in ALLOWED_EXTERNAL_ROOTS and not module.startswith("active_inference"):
@@ -109,8 +111,8 @@ def _validate_file(path: Path, *, sibling_modules: set[str]) -> list[str]:
     return errors
 
 
-def validate_orchestrators(chapters_root: Path, extras_root: Path) -> list[str]:
-    """Validate chapter and extras orchestrator provenance contracts."""
+def validate_orchestrators(chapters_root: Path, extras_root: Path, demo_root: Path) -> list[str]:
+    """Validate chapter, extras, and demo orchestrator provenance contracts."""
     errors: list[str] = []
     for chapter_dir in sorted(chapters_root.glob("chapter_*")):
         if not chapter_dir.is_dir():
@@ -136,18 +138,31 @@ def validate_orchestrators(chapters_root: Path, extras_root: Path) -> list[str]:
         errors.extend(f"{topic_dir / name}: missing declared wrapper" for name in missing)
         for path in _python_files(topic_dir):
             errors.extend(_validate_file(path, sibling_modules=siblings))
+
+    for slug in demo_topic_slugs():
+        topic_dir = demo_root / slug
+        if not topic_dir.is_dir():
+            errors.append(f"{topic_dir}: missing registered demo topic folder")
+            continue
+        siblings = _sibling_modules(topic_dir)
+        expected = {f"visualize_{slug}.py"}
+        present = {path.name for path in _python_files(topic_dir)}
+        missing = sorted(expected - present)
+        errors.extend(f"{topic_dir / name}: missing declared wrapper" for name in missing)
+        for path in _python_files(topic_dir):
+            errors.extend(_validate_file(path, sibling_modules=siblings))
     return errors
 
 
 def main(argv: list[str] | None = None) -> int:
     """Run provenance validation and return a process exit code."""
     args = parse_args(argv)
-    errors = validate_orchestrators(args.chapters_root, args.extras_root)
+    errors = validate_orchestrators(args.chapters_root, args.extras_root, args.demo_root)
     if errors:
         for error in errors:
             print(error, file=sys.stderr)
         return 1
-    print("Validated chapter and extras orchestrator provenance")
+    print("Validated chapter, extras, and demo orchestrator provenance")
     return 0
 
 

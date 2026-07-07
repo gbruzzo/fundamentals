@@ -20,11 +20,12 @@ def _load_validator():
 
 
 def test_live_orchestrators_satisfy_source_method_contract() -> None:
-    """Chapter and extras wrappers stay thin and route through active_inference."""
+    """Chapter, extras, and demo wrappers stay thin and route through active_inference."""
     validator = _load_validator()
     errors = validator.validate_orchestrators(
         REPO_ROOT / "chapters",
         REPO_ROOT / "extras",
+        REPO_ROOT / "demo",
     )
     assert errors == []
 
@@ -33,8 +34,10 @@ def test_validator_rejects_sibling_imports_and_missing_library_route(tmp_path: P
     """The validator catches script-to-script coupling and isolated orchestration."""
     chapters = tmp_path / "chapters" / "chapter_01"
     extras = tmp_path / "extras" / "toy_topic"
+    demos = tmp_path / "demo" / "toy_demo"
     chapters.mkdir(parents=True)
     extras.mkdir(parents=True)
+    demos.mkdir(parents=True)
     (chapters / "helper.py").write_text('"""helper."""\nVALUE = 1\n', encoding="utf-8")
     (chapters / "example_bad.py").write_text(
         '"""bad."""\nfrom helper import VALUE\nprint(VALUE)\n',
@@ -46,7 +49,11 @@ def test_validator_rejects_sibling_imports_and_missing_library_route(tmp_path: P
     )
 
     validator = _load_validator()
-    errors = validator.validate_orchestrators(tmp_path / "chapters", tmp_path / "extras")
+    errors = validator.validate_orchestrators(
+        tmp_path / "chapters",
+        tmp_path / "extras",
+        tmp_path / "demo",
+    )
 
     joined = "\n".join(errors)
     assert "sibling script import" in joined

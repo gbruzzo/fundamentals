@@ -28,16 +28,21 @@ from typing import Sequence
 
 from .runner import (
     CHAPTER_DIRS,
+    DEMO_TOPIC_DIRS,
     EXTRA_TOPIC_DIRS,
     REPO_ROOT,
     ChapterEntry,
+    DemoTopicEntry,
     ExtraTopicEntry,
     ScriptEntry,
     discover_chapters,
+    discover_demos,
     discover_extras,
     run_all_chapters,
+    run_all_demos,
     run_all_extras,
     run_chapter,
+    run_demo,
     run_extra_topic,
     run_script,
 )
@@ -61,9 +66,11 @@ def _term_width(default: int = 80) -> int:
 def render_menu(
     chapters: Sequence[ChapterEntry],
     extras: Sequence[ExtraTopicEntry] | None = None,
+    demos: Sequence[DemoTopicEntry] | None = None,
 ) -> str:
     """Return the printable menu string (no I/O)."""
     extras = discover_extras() if extras is None else extras
+    demos = discover_demos() if demos is None else demos
     width = max(60, min(_term_width(), 100))
     rule = "-" * width
     lines: list[str] = [BANNER.rstrip(), ""]
@@ -92,11 +99,22 @@ def render_menu(
             f"{len(entry.scripts):>2} script(s)   {entry.relative}"
         )
     lines.append("")
+    lines.append("Demos:")
+    if not demos:
+        lines.append("  (no demos discovered - is `demo/` missing?)")
+    for entry in demos:
+        lines.append(
+            f"    [demo:{entry.slug}]  {entry.title:<30}  "
+            f"{len(entry.scripts):>2} script(s)   {entry.relative}"
+        )
+    lines.append("")
     lines.append("Bulk actions:")
     lines.append("   [a]  Run ALL chapters (every script with --save)")
     lines.append("   [x]  Run ALL extras (every extras script with --save)")
+    lines.append("   [d]  Run ALL demos (every demo script with --save)")
     lines.append("   [l]  List every script in every chapter")
     lines.append("   [e]  Run one extras topic")
+    lines.append("   [m]  Run one demo topic")
     lines.append("   [s]  Run a single script (by path)")
     lines.append("   [w]  Launch the local web UI in your browser")
     lines.append("   [h]  Print this menu again")
@@ -105,7 +123,7 @@ def render_menu(
     return "\n".join(lines)
 
 
-def _print_scripts(chapter: ChapterEntry | ExtraTopicEntry) -> None:
+def _print_scripts(chapter: ChapterEntry | ExtraTopicEntry | DemoTopicEntry) -> None:
     """Print a formatted section of discovered chapter scripts."""
     print(f"\n{chapter.title} — {len(chapter.scripts)} script(s)")
     for i, script in enumerate(chapter.scripts, start=1):
@@ -157,6 +175,10 @@ def _resolve_script_path(raw: str) -> Path | None:
         for path in extra_dir.glob("*.py"):
             if raw in path.name:
                 matches.append(path)
+    for demo_dir in DEMO_TOPIC_DIRS.values():
+        for path in demo_dir.glob("*.py"):
+            if raw in path.name:
+                matches.append(path)
     if len(matches) == 1:
         return matches[0]
     if matches:
@@ -175,7 +197,8 @@ def prompt_menu(
     """Interactive loop. Returns a process exit code."""
     chapters = discover_chapters()
     extras = discover_extras()
-    print(render_menu(chapters))
+    demos = discover_demos()
+    print(render_menu(chapters, extras, demos))
     exit_code = 0
     while True:
         try:
@@ -187,12 +210,14 @@ def prompt_menu(
         if raw in {"q", "quit", "exit"}:
             return exit_code
         if raw in {"h", "?", "help", "menu"}:
-            print(render_menu(chapters, extras))
+            print(render_menu(chapters, extras, demos))
             continue
         if raw == "l":
             for entry in chapters:
                 _print_scripts(entry)
             for entry in extras:
+                _print_scripts(entry)
+            for entry in demos:
                 _print_scripts(entry)
             continue
         if raw == "a":
@@ -211,6 +236,14 @@ def prompt_menu(
             )
             exit_code = max(exit_code, _summarize(results))
             continue
+        if raw == "d":
+            results = run_all_demos(
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )
+            exit_code = max(exit_code, _summarize(results))
+            continue
         if raw == "e":
             topic = input("  extras topic slug: ").strip()
             if not topic:
@@ -221,6 +254,36 @@ def prompt_menu(
                 continue
             results = {topic: run_extra_topic(
                 topic,
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )}
+            exit_code = max(exit_code, _summarize(results))
+            continue
+        if raw == "m":
+            slug = input("  demo topic slug: ").strip()
+            if not slug:
+                continue
+            if slug not in DEMO_TOPIC_DIRS:
+                print(f"  Unknown demo topic {slug!r}. Available: "
+                      f"{sorted(DEMO_TOPIC_DIRS)}")
+                continue
+            results = {slug: run_demo(
+                slug,
+                save=save,
+                keep_going=keep_going,
+                include_animations=include_animations,
+            )}
+            exit_code = max(exit_code, _summarize(results))
+            continue
+        if raw.startswith("demo:"):
+            slug = raw.split(":", 1)[1]
+            if slug not in DEMO_TOPIC_DIRS:
+                print(f"  Unknown demo topic {slug!r}. Available: "
+                      f"{sorted(DEMO_TOPIC_DIRS)}")
+                continue
+            results = {slug: run_demo(
+                slug,
                 save=save,
                 keep_going=keep_going,
                 include_animations=include_animations,
@@ -292,10 +355,14 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
                    help="Run every script in every chapter and exit.")
     g.add_argument("--extras", action="store_true",
                    help="Run every script in every extras topic and exit.")
+    g.add_argument("--demos", action="store_true",
+                   help="Run every script in every demo topic and exit.")
     g.add_argument("--chapter", type=int, metavar="N",
                    help="Run every script in chapter N and exit.")
     g.add_argument("--extra", metavar="TOPIC",
                    help="Run every script in one extras topic and exit.")
+    g.add_argument("--demo", metavar="SLUG",
+                   help="Run every script in one demo topic and exit.")
     g.add_argument("--script", metavar="PATH",
                    help="Run a single script (path or filename fragment) and exit.")
     g.add_argument("--list", action="store_true",
@@ -321,10 +388,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.list:
         chapters = discover_chapters()
         extras = discover_extras()
-        print(render_menu(chapters, extras))
+        demos = discover_demos()
+        print(render_menu(chapters, extras, demos))
         for entry in chapters:
             _print_scripts(entry)
         for entry in extras:
+            _print_scripts(entry)
+        for entry in demos:
             _print_scripts(entry)
         return 0
 
@@ -339,6 +409,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.extras:
         results = run_all_extras(
+            save=save,
+            keep_going=args.keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+        )
+        return _summarize(results)
+
+    if args.demos:
+        results = run_all_demos(
             save=save,
             keep_going=args.keep_going,
             include_animations=include_animations,
@@ -367,6 +446,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 2
         results = {args.extra: run_extra_topic(
             args.extra,
+            save=save,
+            keep_going=args.keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+        )}
+        return _summarize(results)
+
+    if args.demo is not None:
+        if args.demo not in DEMO_TOPIC_DIRS:
+            print(f"Unknown demo topic {args.demo!r}. Available: "
+                  f"{sorted(DEMO_TOPIC_DIRS)}", file=sys.stderr)
+            return 2
+        results = {args.demo: run_demo(
+            args.demo,
             save=save,
             keep_going=args.keep_going,
             include_animations=include_animations,

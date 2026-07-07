@@ -101,6 +101,19 @@ Combine that with [`reference/core.md`](reference/core.md) (the API
 table) for full traceability from claim to formula to implementation to
 test.
 
+## Path F — *I want to learn by doing, not by reading summaries*
+
+There is no LLM in this repo — every figure and number comes from a script you
+run and a library you can read, so the understanding comes from the
+run → observe → fix loop rather than from generated prose. Start at
+[`learn_by_hand.md`](learn_by_hand.md): it shows which three surfaces you
+actually touch (`src/`, `chapters/`+`extras/`+`demo/`, `tests/`), how to run one
+example by hand, and a six-step practice loop for any chapter (read the
+orchestrator → read the `src/` logic → run it → change one parameter and
+re-run → map the code to the book symbol in `notation.md` → lock it in with a
+small test). The hard rule there: never hand-edit `output/` to satisfy a
+validator — fix the source.
+
 ## Quick orientation
 
 If you only ever read one page, make it [`cookbook.md`](cookbook.md);

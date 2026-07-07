@@ -13,7 +13,8 @@ the inspected PDF source-spine contract.
 |---|---|---|
 | [`book_topic_matrix.md`](book_topic_matrix.md) | `extras/` + `active_inference.extra_topics` | Book-section coverage by extras topic and artifact mode. |
 | [`source_spine.md`](source_spine.md) | `active_inference.source_spine` + `scripts/validate_source_spine.py` | Inspected PDF ledger: Chapters 1-14, Appendices A-D, and no Chapter 15. |
-| [`orchestrator_provenance.md`](orchestrator_provenance.md) | `chapters/`, `extras/`, `scripts/validate_orchestrator_provenance.py` | Source-method boundary for thin wrappers, source API metadata, and artifact validation gates. |
+| [`orchestrator_provenance.md`](orchestrator_provenance.md) | `chapters/`, `extras/`, `demo/`, `scripts/validate_orchestrator_provenance.py` | Source-method boundary for thin wrappers, source API metadata, and artifact validation gates. |
+| [`demos.md`](demos.md) | `demo/`, `active_inference.demo_topics`, `active_inference.demo_workflows` | Application demo registry, workflow builders, and export paths. |
 | [`core.md`](core.md) | `src/active_inference/core/` | distributions, generative process / model, exact inference, LGS, diagnostics, Appendix math/noise/model comparison, variational free energy (Ch.4), free-energy variants, factor-graph messages, ergodic-density helpers, thermodynamic/FEP bridge helpers, predictive coding (Ch.5), generalized filtering / action (Ch.6–7), continuous learning / hierarchy (Ch.8), POMDPs (Ch.9–10), and Part III helpers. |
 | [`estimators.md`](estimators.md) | `src/active_inference/estimators/` | MLE, MAP, gradient descent, linear regression, Bayesian linear regression, factor-analysis EM, variational inference (Ch.4), predictive coding (Ch.5), generalized filtering / action (Ch.6–7), continuous learning (Ch.8), POMDP estimators (Ch.9–11), and application demos (Ch.13). |
 | [`utils.md`](utils.md) | `src/active_inference/utils/` | grids, paths, logger factory, and NPZ+JSON raw-data exports. |

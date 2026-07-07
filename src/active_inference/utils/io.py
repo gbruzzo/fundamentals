@@ -35,6 +35,14 @@ def default_data_dir() -> Path:
     return _output_root() / "data"
 
 
+def default_demo_figure_dir(slug: str) -> Path:
+    """Return the figure output directory for one application demo topic slug."""
+    safe = slug.strip().replace("/", "_")
+    if not safe:
+        raise ValueError("slug must not be empty")
+    return default_figure_dir() / "demo" / safe
+
+
 def ensure_dir(path: Path) -> Path:
     """Create ``path`` (and parents) if missing; return it unchanged."""
     path = Path(path)

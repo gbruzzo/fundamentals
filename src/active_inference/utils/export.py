@@ -26,6 +26,7 @@ ArrayMap = Mapping[str, Any]
 
 _CHAPTER_RE = re.compile(r"chapter_(\d{2})")
 _EXTRAS_RE = re.compile(r"extras")
+_DEMO_RE = re.compile(r"demo")
 _SAFE_NAME_RE = re.compile(r"[^0-9A-Za-z_]+")
 _SKIP_CLOSURE_NAMES = {
     "ax",
@@ -172,6 +173,20 @@ def extra_data_dir(topic: str, *, root: Path | str | None = None) -> Path:
     return base / "extras" / _extra_topic(topic)
 
 
+def _demo_slug(slug: str) -> str:
+    """Return a stable demo topic directory name."""
+    safe = _sanitize_name(slug)
+    if not safe:
+        raise ValueError("slug must not be empty")
+    return safe
+
+
+def demo_data_dir(slug: str, *, root: Path | str | None = None) -> Path:
+    """Return the raw-data directory for one demo topic under ``output/data``."""
+    base = Path(root) if root is not None else default_data_dir()
+    return base / "demo" / _demo_slug(slug)
+
+
 def infer_chapter_from_path(path: Path | str) -> int:
     """Infer ``NN`` from a path containing a ``chapter_NN`` component."""
     for part in Path(path).parts:
@@ -188,6 +203,15 @@ def infer_extra_topic_from_path(path: Path | str) -> str:
         if _EXTRAS_RE.fullmatch(part):
             return _extra_topic(parts[index + 1])
     raise ValueError(f"could not infer extras/<topic> from {path!s}")
+
+
+def infer_demo_slug_from_path(path: Path | str) -> str:
+    """Infer the demo topic slug from a path containing ``demo/<slug>``."""
+    parts = Path(path).parts
+    for index, part in enumerate(parts[:-1]):
+        if _DEMO_RE.fullmatch(part):
+            return _demo_slug(parts[index + 1])
+    raise ValueError(f"could not infer demo/<slug> from {path!s}")
 
 
 def data_paths_for_figure(
@@ -213,6 +237,19 @@ def data_paths_for_extra_figure(
     topic = infer_extra_topic_from_path(figure)
     stem = figure.stem
     data_dir = extra_data_dir(topic, root=root)
+    return data_dir / f"{stem}.npz", data_dir / f"{stem}.json"
+
+
+def data_paths_for_demo_figure(
+    figure_path: Path | str,
+    *,
+    root: Path | str | None = None,
+) -> tuple[Path, Path]:
+    """Return NPZ/JSON sidecars for a figure under ``output/figures/demo``."""
+    figure = Path(figure_path)
+    slug = infer_demo_slug_from_path(figure)
+    stem = figure.stem
+    data_dir = demo_data_dir(slug, root=root)
     return data_dir / f"{stem}.npz", data_dir / f"{stem}.json"
 
 
@@ -308,6 +345,27 @@ def save_extra_data(
         metadata,
         figures=figures,
         manifest_fields={"section": "extras", "topic": safe_topic},
+    )
+
+
+def save_demo_data(
+    slug: str,
+    stem: str,
+    arrays: ArrayMap,
+    metadata: Mapping[str, Any] | None = None,
+    *,
+    figures: Sequence[Path | str] | None = None,
+    root: Path | str | None = None,
+) -> tuple[Path, Path]:
+    """Write validated demo-topic arrays to ``.npz`` plus a JSON manifest."""
+    safe_slug = _demo_slug(slug)
+    return _write_data_pair(
+        demo_data_dir(safe_slug, root=root),
+        stem,
+        arrays,
+        metadata,
+        figures=figures,
+        manifest_fields={"section": "demo", "slug": safe_slug},
     )
 
 

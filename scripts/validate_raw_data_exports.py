@@ -36,6 +36,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Extras topic slugs that must have at least one valid export.",
     )
+    parser.add_argument(
+        "--demos",
+        nargs="*",
+        default=None,
+        help="Demo topic slugs that must have at least one valid export.",
+    )
     return parser.parse_args(argv)
 
 
@@ -47,6 +53,11 @@ def _chapter_dir(root: Path, chapter: int) -> Path:
 def _extra_dir(root: Path, topic: str) -> Path:
     """Return the expected raw-data directory for one extras topic."""
     return root / "extras" / topic
+
+
+def _demo_dir(root: Path, slug: str) -> Path:
+    """Return the expected raw-data directory for one demo topic."""
+    return root / "demo" / slug
 
 
 def _pairs(directory: Path) -> list[tuple[Path, Path]]:
@@ -136,33 +147,46 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     root = args.root
     errors: list[str] = []
+    directories: list[Path] = []
 
-    if args.chapters or args.extras:
-        directories = []
-    if args.chapters:
-        directories = [_chapter_dir(root, chapter) for chapter in args.chapters]
-        for chapter, directory in zip(args.chapters, directories):
-            if not directory.exists():
-                errors.append(f"{directory}: missing chapter_{chapter:02d} data directory")
-                continue
-            if not _pairs(directory):
-                errors.append(f"{directory}: no NPZ+JSON raw-data pairs")
-    if args.extras:
-        extra_directories = [_extra_dir(root, topic) for topic in args.extras]
-        directories.extend(extra_directories)
-        for topic, directory in zip(args.extras, extra_directories):
-            if not directory.exists():
-                errors.append(f"{directory}: missing extras topic {topic!r} data directory")
-                continue
-            if not _pairs(directory):
-                errors.append(f"{directory}: no NPZ+JSON raw-data pairs")
-    if not args.chapters and not args.extras:
+    if args.chapters or args.extras or args.demos:
+        if args.chapters:
+            for chapter in args.chapters:
+                directory = _chapter_dir(root, chapter)
+                if not directory.exists():
+                    errors.append(f"{directory}: missing chapter_{chapter:02d} data directory")
+                else:
+                    directories.append(directory)
+                    if not _pairs(directory):
+                        errors.append(f"{directory}: no NPZ+JSON raw-data pairs")
+        if args.extras:
+            for topic in args.extras:
+                directory = _extra_dir(root, topic)
+                if not directory.exists():
+                    errors.append(f"{directory}: missing extras topic {topic!r} data directory")
+                else:
+                    directories.append(directory)
+                    if not _pairs(directory):
+                        errors.append(f"{directory}: no NPZ+JSON raw-data pairs")
+        if args.demos:
+            for slug in args.demos:
+                directory = _demo_dir(root, slug)
+                if not directory.exists():
+                    errors.append(f"{directory}: missing demo topic {slug!r} data directory")
+                else:
+                    directories.append(directory)
+                    if not _pairs(directory):
+                        errors.append(f"{directory}: no NPZ+JSON raw-data pairs")
+    else:
         directories = sorted(path for path in root.glob("chapter_*") if path.is_dir())
         extras_root = root / "extras"
         if extras_root.is_dir():
             directories.extend(sorted(path for path in extras_root.iterdir() if path.is_dir()))
+        demo_root = root / "demo"
+        if demo_root.is_dir():
+            directories.extend(sorted(path for path in demo_root.iterdir() if path.is_dir()))
         if not directories:
-            errors.append(f"{root}: no chapter or extras data directories found")
+            errors.append(f"{root}: no chapter, extras, or demo data directories found")
 
     for directory in directories:
         if directory.exists():

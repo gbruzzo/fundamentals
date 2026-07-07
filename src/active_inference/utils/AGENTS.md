@@ -22,6 +22,8 @@ it goes in `visualizations/`.
 | `grids.py` | `make_grid`, `make_2d_grid` — discretized state domains. |
 | `logging.py` | `get_logger` — idempotent stdlib logger factory. |
 | `io.py` | `default_figure_dir`, `default_data_dir`, `ensure_dir`. |
+| `export.py` | NPZ+JSON sidecar writers and figure/animation data extractors. |
+| `notebooks.py` | `default_notebook_dir`, Jupyter export (`build_notebook`, `export_*_notebook`, `export_all_notebooks`). Lazy-imports `menu.runner` for discovery. |
 
 ## Conventions
 
@@ -41,5 +43,6 @@ it goes in `visualizations/`.
 ## Dependency graph
 
 ```
-utils/  →  numpy (only in grids.py), pathlib, logging, sys
+utils/  →  numpy (only in grids.py), nbformat (notebooks.py), pathlib, logging, sys
+notebooks.py  →  menu.runner (lazy, discovery only)
 ```

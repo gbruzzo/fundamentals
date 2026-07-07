@@ -11,6 +11,7 @@ Public surface:
   discovery functions.
 * :func:`discover_chapters` — find every ``chapters/chapter_<N>/`` folder.
 * :func:`discover_extras` — find every ``extras/<topic>/`` folder.
+* :func:`discover_demos` — find every ``demo/<slug>/`` folder.
 * :func:`discover_scripts` — list the runnable scripts in one chapter.
 * :func:`run_script` / :func:`run_chapter` / :func:`run_all_chapters` —
   invoke chapter orchestrators with ``MPLBACKEND=Agg`` and ``--save``.
@@ -26,6 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
 
+from active_inference.demo_topics import demo_topic_slugs, demo_topic_spec
 from active_inference.extra_topics import extra_topic_slugs, extra_topic_spec
 
 
@@ -48,12 +50,14 @@ def _resolve_repo_root() -> Path:
 REPO_ROOT: Path = _resolve_repo_root()
 CHAPTERS_ROOT: Path = REPO_ROOT / "chapters"
 EXTRAS_ROOT: Path = REPO_ROOT / "extras"
+DEMO_ROOT: Path = REPO_ROOT / "demo"
 OUTPUT_DIR: Path = REPO_ROOT / "output" / "figures"
 
 # Chapter index. Extend by dropping new ``chapter_<NN>/`` folders into
 # ``chapters/`` — discovery picks them up automatically.
 CHAPTER_DIRS: dict[int, Path] = {}
 EXTRA_TOPIC_DIRS: dict[str, Path] = {}
+DEMO_TOPIC_DIRS: dict[str, Path] = {}
 
 
 _CHAPTER_PATTERN = re.compile(r"^chapter_(\d+)$")
@@ -93,8 +97,28 @@ def _refresh_extra_topic_dirs() -> None:
         EXTRA_TOPIC_DIRS[slug] = path
 
 
+def _refresh_demo_topic_dirs() -> None:
+    """Refresh demo topic discovery caches after filesystem changes."""
+    DEMO_TOPIC_DIRS.clear()
+    if not DEMO_ROOT.is_dir():
+        return
+    discovered: dict[str, Path] = {}
+    for entry in sorted(DEMO_ROOT.iterdir()):
+        if not entry.is_dir():
+            continue
+        if not _EXTRA_PATTERN.match(entry.name):
+            continue
+        discovered[entry.name] = entry
+    for slug in demo_topic_slugs():
+        if slug in discovered:
+            DEMO_TOPIC_DIRS[slug] = discovered.pop(slug)
+    for slug, path in sorted(discovered.items()):
+        DEMO_TOPIC_DIRS[slug] = path
+
+
 _refresh_chapter_dirs()
 _refresh_extra_topic_dirs()
+_refresh_demo_topic_dirs()
 
 
 @dataclass(frozen=True)
@@ -105,6 +129,7 @@ class ScriptEntry:
     chapter: int | None
     kind: str  # "example", "animation", "visualize", "simulate", "concept", "interactive", "other"
     topic: str | None = None
+    demo: str | None = None
 
     @property
     def name(self) -> str:
@@ -200,6 +225,47 @@ class ExtraTopicEntry:
             return str(self.path)
 
 
+@dataclass
+class DemoTopicEntry:
+    """A demo topic folder and its runnable scripts."""
+
+    slug: str
+    path: Path
+    scripts: list[ScriptEntry] = field(default_factory=list)
+
+    @property
+    def title(self) -> str:
+        """Return the registered demo title when available."""
+        try:
+            return demo_topic_spec(self.slug).title
+        except KeyError:
+            return self.slug.replace("_", " ").title()
+
+    @property
+    def summary(self) -> str:
+        """Return the registered demo summary when available."""
+        try:
+            return demo_topic_spec(self.slug).summary
+        except KeyError:
+            return "Application demo"
+
+    @property
+    def chapters(self) -> tuple[int, ...]:
+        """Return book chapters associated with this demo."""
+        try:
+            return demo_topic_spec(self.slug).chapters
+        except KeyError:
+            return ()
+
+    @property
+    def relative(self) -> str:
+        """Return display metadata derived from this repository path."""
+        try:
+            return str(self.path.relative_to(REPO_ROOT))
+        except ValueError:
+            return str(self.path)
+
+
 def _classify(script: Path) -> str:
     """Classify a chapter script by filename convention."""
     name = script.name
@@ -258,6 +324,19 @@ def discover_extras() -> list[ExtraTopicEntry]:
             scripts=discover_extra_scripts(slug),
         )
         for slug, path in EXTRA_TOPIC_DIRS.items()
+    ]
+
+
+def discover_demos() -> list[DemoTopicEntry]:
+    """Return every demo topic folder, populated with runnable scripts."""
+    _refresh_demo_topic_dirs()
+    return [
+        DemoTopicEntry(
+            slug=slug,
+            path=path,
+            scripts=discover_demo_scripts(slug),
+        )
+        for slug, path in DEMO_TOPIC_DIRS.items()
     ]
 
 
@@ -320,6 +399,33 @@ def discover_extra_scripts(
         if kind == "interactive" and not include_interactive:
             continue
         out.append(ScriptEntry(path=candidate, chapter=None, kind=kind, topic=topic))
+    return out
+
+
+def discover_demo_scripts(
+    slug: str,
+    *,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    include_interactive: bool = False,
+) -> list[ScriptEntry]:
+    """List runnable scripts in one demo topic folder."""
+    _refresh_demo_topic_dirs()
+    if slug not in DEMO_TOPIC_DIRS:
+        raise KeyError(f"Unknown demo topic: {slug!r}")
+    base = DEMO_TOPIC_DIRS[slug]
+    out: list[ScriptEntry] = []
+    for candidate in sorted(base.glob("*.py")):
+        if not _is_runnable(candidate) and not include_interactive:
+            continue
+        kind = _classify(candidate)
+        if kind == "animation" and not include_animations:
+            continue
+        if kind == "visualize" and not include_visualizations:
+            continue
+        if kind == "interactive" and not include_interactive:
+            continue
+        out.append(ScriptEntry(path=candidate, chapter=None, kind=kind, demo=slug))
     return out
 
 
@@ -436,6 +542,38 @@ def run_extra_topic(
     return results
 
 
+def run_demo(
+    slug: str,
+    *,
+    save: bool = True,
+    keep_going: bool = False,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    quiet: bool = False,
+) -> list[tuple[ScriptEntry, int]]:
+    """Run every script in one demo topic, returning ``(script, returncode)`` pairs."""
+    results: list[tuple[ScriptEntry, int]] = []
+    scripts = discover_demo_scripts(
+        slug,
+        include_animations=include_animations,
+        include_visualizations=include_visualizations,
+    )
+    if not quiet:
+        print(f"\n=== Demo: {slug} ({len(scripts)} scripts) ===", flush=True)
+    for script in scripts:
+        completed = run_script(script, save=save, quiet=quiet)
+        results.append((script, completed.returncode))
+        if completed.returncode != 0 and not keep_going:
+            if not quiet:
+                print(
+                    f"  X {script.name} failed (returncode={completed.returncode}). "
+                    f"Aborting (use --keep-going to continue).",
+                    flush=True,
+                )
+            break
+    return results
+
+
 def run_all_chapters(
     *,
     save: bool = True,
@@ -475,6 +613,31 @@ def run_all_extras(
     out: dict[str, list[tuple[ScriptEntry, int]]] = {}
     for entry in discover_extras():
         out[entry.slug] = run_extra_topic(
+            entry.slug,
+            save=save,
+            keep_going=keep_going,
+            include_animations=include_animations,
+            include_visualizations=include_visualizations,
+            quiet=quiet,
+        )
+        first_failure = next((rc for _, rc in out[entry.slug] if rc != 0), 0)
+        if first_failure and not keep_going:
+            break
+    return out
+
+
+def run_all_demos(
+    *,
+    save: bool = True,
+    keep_going: bool = False,
+    include_animations: bool = True,
+    include_visualizations: bool = True,
+    quiet: bool = False,
+) -> dict[str, list[tuple[ScriptEntry, int]]]:
+    """Run every demo topic, returning a per-topic results dict."""
+    out: dict[str, list[tuple[ScriptEntry, int]]] = {}
+    for entry in discover_demos():
+        out[entry.slug] = run_demo(
             entry.slug,
             save=save,
             keep_going=keep_going,
